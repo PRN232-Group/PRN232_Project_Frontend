@@ -29,10 +29,9 @@ const Header = () => {
   };
 
   // =========================
-  // MENU CONFIG BY ROLE
+  // MENU CONFIG
   // =========================
 
-  // 🔥 FIXED: chỉ giữ route có thật
   const publicMenu = [
     { label: "Trang chủ", href: "/" },
     { label: "Sản phẩm", href: "/products" },
@@ -40,14 +39,13 @@ const Header = () => {
   ];
 
   const customerMenu = [
-    { label: "Sản phẩm", href: "/products" },
     { label: "Giỏ hàng", href: "/cart" },
     { label: "Đơn hàng", href: "/orders" },
     { label: "Chat", href: "/chat" },
   ];
 
   const salesMenu = [
-    { label: "Dashboard Sales", href: "/sales" },
+    { label: "Sales Dashboard", href: "/sales" },
     { label: "Yêu cầu báo giá", href: "/sales/quotation-request" },
     { label: "Duyệt báo giá", href: "/sales/quotation-approval" },
     { label: "Quản lý đơn hàng", href: "/sales/orders" },
@@ -55,38 +53,38 @@ const Header = () => {
   ];
 
   const productionMenu = [
-    { label: "Dashboard SX", href: "/production" },
-    { label: "Danh sách đơn SX", href: "/production/orders" },
+    { label: "SX Dashboard", href: "/production" },
+    { label: "Đơn sản xuất", href: "/production/orders" },
     { label: "Tiến độ", href: "/production/progress" },
-    { label: "Cập nhật giao hàng", href: "/production/delivery" },
+    { label: "Giao hàng", href: "/production/delivery" },
   ];
 
   const managerMenu = [
-    { label: "Dashboard", href: "/manager" },
+    { label: "Manager Dashboard", href: "/manager" },
     { label: "Sản phẩm", href: "/manager/products" },
     { label: "Giá", href: "/manager/prices" },
     { label: "Đơn hàng", href: "/manager/orders" },
     { label: "Doanh thu", href: "/manager/revenue" },
   ];
 
-  // ❌ ADMIN KHÔNG HIỂN THỊ TRONG HEADER
+  // ❌ ADMIN KHÔNG HIỂN THỊ
   const adminMenu = [];
 
   const getMenu = () => {
     if (!user) return publicMenu;
 
-    switch (user.role) {
-      case "ADMIN":
-        return adminMenu;
-      case "MANAGER":
-        return managerMenu;
-      case "SALES":
-        return salesMenu;
-      case "PRODUCTION":
-        return productionMenu;
-      default:
-        return [...publicMenu, ...customerMenu];
-    }
+    const roleMenus = {
+      CUSTOMER: customerMenu,
+      SALES: salesMenu,
+      PRODUCTION: productionMenu,
+      MANAGER: managerMenu,
+      ADMIN: [],
+    };
+
+    return [
+      ...publicMenu,
+      ...(roleMenus[user.role] || customerMenu),
+    ];
   };
 
   const menuItems = getMenu();
@@ -109,7 +107,7 @@ const Header = () => {
             <li key={item.href}>
               <Link
                 to={item.href}
-                className={`text-sm font-medium relative transition ${
+                className={`text-sm font-medium transition ${
                   currentPath === item.href
                     ? "text-amber-600"
                     : "text-gray-600 hover:text-amber-600"
@@ -123,14 +121,6 @@ const Header = () => {
 
         {/* RIGHT */}
         <div className="flex items-center gap-4">
-
-          {/* CTA */}
-          <Link
-            to="/consultation"
-            className="hidden md:inline-block bg-gradient-to-r from-amber-500 to-orange-500 text-white px-5 py-2 rounded-full text-sm font-medium"
-          >
-            Đặt tư vấn
-          </Link>
 
           {/* AUTH */}
           {user ? (
