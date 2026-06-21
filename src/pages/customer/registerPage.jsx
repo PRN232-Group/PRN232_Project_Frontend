@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import "@fortawesome/fontawesome-free/css/all.min.css";
-import "../../styles/loginPage.css";
+import "../../styles/customer/registerPage.css";
 
 const RegisterPage = () => {
   const navigate = useNavigate();

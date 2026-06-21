@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import "@fortawesome/fontawesome-free/css/all.min.css";
-import "../../styles/loginPage.css";
+import "../../styles/customer/loginPage.css";
 
 function LoginPage() {
   const navigate = useNavigate();
@@ -46,8 +46,7 @@ function LoginPage() {
       localStorage.setItem("user", JSON.stringify(mockUser));
 
       alert("Login success!");
-
-      navigate("/");
+navigate("/", { replace: true });
     } catch (err) {
       setError("Đăng nhập thất bại!");
     } finally {

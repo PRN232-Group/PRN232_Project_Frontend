@@ -1,24 +1,20 @@
 import { RouterProvider } from "react-router-dom";
 import { router } from "./routers/router";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import UserContext from "./contexts/UserContext";
 
-function App() {
-  const [user, setUser] = useState(null);
-
-  useEffect(() => {
+function getUserFromStorage() {
+  try {
     const savedUser = localStorage.getItem("user");
+    return savedUser ? JSON.parse(savedUser) : null;
+  } catch (err) {
+    localStorage.removeItem("user");
+    return null;
+  }
+}
 
-    if (savedUser) {
-      try {
-        const parsedUser = JSON.parse(savedUser);
-        setUser(parsedUser);
-      } catch (err) {
-        console.log("Invalid localStorage user");
-        localStorage.removeItem("user");
-      }
-    }
-  }, []);
+function App() {
+  const [user, setUser] = useState(getUserFromStorage());
 
   return (
     <UserContext.Provider value={{ user, setUser }}>
