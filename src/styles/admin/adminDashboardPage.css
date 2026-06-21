@@ -1,0 +1,138 @@
+.admin-layout {
+  display: flex;
+  min-height: 100vh;
+  background: #fafafa;
+}
+
+/* Sidebar nằm bên trái, width cố định, không fixed */
+.admin-layout > aside,
+.admin-layout > div:first-child {
+  width: 260px;
+  background-color: #b71c1c;
+  color: #fff;
+  padding: 2rem 1.5rem;
+  box-sizing: border-box;
+}
+
+/* Nội dung dashboard nằm bên phải, chiếm hết phần còn lại */
+.dashboard-container {
+  flex-grow: 1;
+  padding: 2.5rem 3rem;
+  border-radius: 12px;
+  margin-left: 1.5rem;
+  min-height: 100vh;
+  box-sizing: border-box;
+}
+
+/* Tiêu đề chính */
+.dashboard-container h1 {
+  text-align: center;
+  color: #b71c1c;
+  margin-bottom: 2.5rem;
+  font-weight: 700;
+  font-size: 2.4rem;
+}
+
+/* Cards thống kê */
+.dashboard-cards {
+  display: flex;
+  justify-content: space-between;
+  gap: 1.5rem;
+  flex-wrap: wrap;
+  margin-bottom: 2.5rem;
+}
+
+.dashboard-card {
+  flex: 1 1 30%;
+  min-width: 280px;
+  background: #fbe9e7;
+  padding: 1.8rem;
+  border-radius: 12px;
+  text-align: center;
+  box-shadow: 0 2px 12px rgba(183, 28, 28, 0.1);
+  transition: transform 0.3s ease;
+  cursor: default;
+  user-select: none;
+}
+
+.dashboard-card:hover {
+  transform: scale(1.05);
+}
+
+.dashboard-card h2 {
+  font-size: 2.4rem;
+  margin: 0.7rem 0;
+  color: #d32f2f;
+  font-weight: 700;
+}
+
+.dashboard-card p {
+  font-size: 1.1rem;
+  color: #555;
+  font-weight: 600;
+}
+
+/* Màu sắc theo loại card */
+.donors {
+  background-color: #ffebee;
+}
+
+.requests {
+  background-color: #e3f2fd;
+}
+
+.events {
+  background-color: #f1f8e9;
+}
+
+/* Section sự kiện gần đây */
+.dashboard-section {
+  max-width: 700px;
+  margin: 0 auto;
+}
+
+.dashboard-section h2 {
+  color: #444;
+  margin-bottom: 1.2rem;
+  font-weight: 600;
+  font-size: 1.6rem;
+}
+
+.event-list {
+  list-style-type: disc;
+  padding-left: 1.6rem;
+  color: #333;
+  font-size: 1.1rem;
+}
+
+.event-list li {
+  margin-bottom: 0.7rem;
+}
+
+/* Responsive nhẹ cho mobile */
+@media (max-width: 768px) {
+  .admin-layout {
+    flex-direction: column;
+  }
+
+  .admin-layout > aside,
+  .admin-layout > div:first-child {
+    width: 100%;
+    padding: 1rem 1rem;
+  }
+
+  .dashboard-container {
+    margin-left: 0;
+    padding: 1.5rem 1.5rem;
+    border-radius: 0;
+    min-height: auto;
+  }
+
+  .dashboard-cards {
+    flex-direction: column;
+  }
+
+  .dashboard-card {
+    min-width: 100%;
+  }
+}
