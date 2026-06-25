@@ -1,0 +1,33 @@
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.page-title {
+  font-size: 24px;
+  font-weight: bold;
+}
+
+.card {
+  background: #fff;
+  border-radius: 8px;
+  padding: 16px;
+}
+
+.btn-primary {
+  background-color: #1677ff;
+  color: #fff;
+}
+
+.btn-danger {
+  background-color: #ff4d4f;
+  color: #fff;
+}
+
+.search-box {
+  width: 300px;
+}
+
+.table-wrapper {
+  overflow-x: auto;
+}

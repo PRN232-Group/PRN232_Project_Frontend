@@ -1,0 +1,140 @@
+/* ===== HEADER WRAPPER ===== */
+.main-header-bg {
+  background-color: #ffffff;
+  border-bottom: 1px solid #eee;
+  padding: 14px 40px; /* ⬅ tăng padding ngang */
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+}
+
+/* ===== NAV LAYOUT ===== */
+.main-header-nav {
+  display: flex;
+  justify-content: space-between; /* ⬅ quan trọng: không dùng space-around */
+  align-items: center;
+  gap: 40px; /* ⬅ tạo khoảng cách tổng thể */
+}
+
+/* ===== LOGO ===== */
+.main-header-logo {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.main-header-logo-link {
+  display: flex;
+  align-items: center;
+  text-decoration: none;
+  color: #333;
+  gap: 10px;
+}
+
+.main-header-logo-img {
+  width: 42px;
+  height: 42px;
+}
+
+.main-header-brand {
+  font-size: 22px;
+  font-weight: 700;
+  color: #1f2937;
+  letter-spacing: 0.5px;
+}
+
+/* ===== MENU ===== */
+.main-header-menu {
+  display: flex;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+
+  gap: 28px; /* ⬅ tăng khoảng cách giữa item */
+}
+
+.main-header-menu li {
+  position: relative;
+}
+
+.main-header-menu a {
+  text-decoration: none;
+  color: #444;
+  font-weight: 500;
+  font-size: 15px;
+
+  padding: 8px 6px; /* ⬅ làm link “dễ click” hơn */
+  transition: all 0.25s ease;
+}
+
+.main-header-menu a:hover {
+  color: #c58b5a; /* ⬅ tone nội thất (gold/wood) */
+}
+
+/* active */
+.main-header-menu .active a,
+.main-header-menu a[aria-current="page"] {
+  color: #c58b5a;
+  font-weight: 600;
+}
+
+/* ===== CONTACT (nếu dùng) ===== */
+.main-header-contact {
+  display: flex;
+  gap: 20px;
+}
+
+/* ===== AUTH AREA ===== */
+.main-header-auth {
+  margin-left: 20px;
+  display: flex;
+  align-items: center;
+  gap: 14px; /* ⬅ tách login / user / CTA */
+}
+
+/* ===== LOGIN BUTTON ===== */
+.main-header-login-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+
+  padding: 10px 22px; /* ⬅ rộng hơn */
+  background: linear-gradient(135deg, #c58b5a, #e2b07a);
+  color: #fff;
+  border-radius: 999px;
+
+  font-weight: 600;
+  font-size: 14px;
+
+  box-shadow: 0 6px 16px rgba(197, 139, 90, 0.25);
+  transition: all 0.25s ease;
+  border: none;
+
+  white-space: nowrap;
+}
+
+.main-header-login-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 20px rgba(197, 139, 90, 0.35);
+}
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 768px) {
+  .main-header-nav {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 16px;
+  }
+
+  .main-header-menu {
+    flex-wrap: wrap;
+    gap: 14px;
+  }
+
+  .main-header-auth {
+    margin-left: 0;
+    width: 100%;
+    justify-content: flex-start;
+  }
+}
