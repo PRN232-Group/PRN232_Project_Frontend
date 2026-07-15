@@ -29,7 +29,6 @@ const ProductReviewPage = () => {
       setReviews(res.data || []);
     } catch (err) {
       console.error(err);
-      setError("Không thể tải đánh giá");
 
       // fallback demo
       setReviews([

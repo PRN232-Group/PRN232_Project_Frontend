@@ -34,7 +34,6 @@ const InteriorDesignPage = () => {
       setFiltered(res.data || []);
     } catch (err) {
       console.error(err);
-      setError("Không thể tải dữ liệu thiết kế");
 
       // fallback demo data
       const demo = [

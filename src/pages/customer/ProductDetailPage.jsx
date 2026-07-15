@@ -16,6 +16,39 @@ const ProductDetailPage = () => {
     fetchProduct();
   }, [id]);
 
+  const demoCatalog = {
+    1: {
+      id: 1,
+      name: "Modern Sofa",
+      price: 5000000,
+      category: "Sofa",
+      description:
+        "Sofa vải cao cấp với khung gỗ tự nhiên, đệm mút hồi phục chậm, mang lại sự thoải mái và vẻ đẹp tinh tế cho phòng khách của bạn.",
+      image:
+        "https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?w=900&q=80",
+    },
+    2: {
+      id: 2,
+      name: "Wood Table",
+      price: 2000000,
+      category: "Table",
+      description:
+        "Bàn gỗ sồi nguyên khối, hoàn thiện dầu tự nhiên, bền bỉ theo thời gian và phù hợp với mọi phong cách nội thất.",
+      image:
+        "https://images.unsplash.com/photo-1524758631624-e2822e304c36?w=900&q=80",
+    },
+    3: {
+      id: 3,
+      name: "Office Chair",
+      price: 1500000,
+      category: "Chair",
+      description:
+        "Ghế làm việc công thái học, tựa lưng nâng đỡ cột sống và chất liệu lưới thoáng khí cho những giờ làm việc dài.",
+      image:
+        "https://images.unsplash.com/photo-1503602642458-232111445657?w=900&q=80",
+    },
+  };
+
   const fetchProduct = async () => {
     try {
       setLoading(true);
@@ -28,7 +61,8 @@ const ProductDetailPage = () => {
       setProduct(res.data);
     } catch (err) {
       console.error(err);
-      setError("Không thể tải sản phẩm");
+      const fallback = demoCatalog[id] || demoCatalog[1];
+      setProduct(fallback);
     } finally {
       setLoading(false);
     }

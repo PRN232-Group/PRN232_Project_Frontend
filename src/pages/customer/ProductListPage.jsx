@@ -13,7 +13,7 @@ const ProductListPage = () => {
   const [category, setCategory] = useState("All");
 
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
+  const [toast, setToast] = useState("");
 
   // pagination
   const [currentPage, setCurrentPage] = useState(1);
@@ -42,7 +42,6 @@ const ProductListPage = () => {
       setFiltered(res.data || []);
     } catch (err) {
       console.error(err);
-      setError("Không thể tải sản phẩm");
 
       // fallback demo data
       const demo = [
@@ -97,16 +96,28 @@ const ProductListPage = () => {
   };
 
   const addToCart = async (product) => {
+    // optimistic local cart so the flow works without a backend
     try {
-      await axios.post("https://localhost:5001/api/cart", {
-        productId: product.id,
-        quantity: 1,
-      });
+      const cart = JSON.parse(localStorage.getItem("cart") || "[]");
+      const existing = cart.find((i) => i.id === product.id);
+      if (existing) {
+        existing.quantity += 1;
+      } else {
+        cart.push({ ...product, quantity: 1 });
+      }
+      localStorage.setItem("cart", JSON.stringify(cart));
 
-      alert("Đã thêm vào giỏ hàng!");
+      axios
+        .post("https://localhost:5001/api/cart", {
+          productId: product.id,
+          quantity: 1,
+        })
+        .catch(() => {});
+
+      setToast(`Đã thêm "${product.name}" vào giỏ hàng`);
+      setTimeout(() => setToast(""), 2200);
     } catch (err) {
       console.error(err);
-      alert("Thêm giỏ hàng thất bại");
     }
   };
 
@@ -154,7 +165,7 @@ const ProductListPage = () => {
 
       {/* CONTENT */}
       {loading && <p>Loading products...</p>}
-      {error && <p className="error">{error}</p>}
+      {toast && <div className="toast-inline">{toast}</div>}
 
       {/* GRID */}
       <div className="grid">

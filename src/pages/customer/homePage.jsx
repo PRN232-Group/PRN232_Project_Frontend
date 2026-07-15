@@ -10,16 +10,45 @@ const HomePage = () => {
   const [index, setIndex] = useState(0);
   const visible = 3;
 
+  const fallbackStories = [
+    {
+      id: "living-warmth",
+      title: "Ấm áp trong từng đường nét gỗ",
+      imageUrl:
+        "https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?w=800&q=80",
+    },
+    {
+      id: "soft-minimal",
+      title: "Tối giản mà tinh tế",
+      imageUrl:
+        "https://images.unsplash.com/photo-1615529182904-14819c35db37?w=800&q=80",
+    },
+    {
+      id: "natural-light",
+      title: "Không gian ngập tràn ánh sáng",
+      imageUrl:
+        "https://images.unsplash.com/photo-1618221195710-dd6b41faaea6?w=800&q=80",
+    },
+    {
+      id: "cozy-bedroom",
+      title: "Phòng ngủ như một chốn nghỉ dưỡng",
+      imageUrl:
+        "https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=800&q=80",
+    },
+  ];
+
   useEffect(() => {
     const fetchBlogs = async () => {
       try {
         const res = await axios.get("https://localhost:7293/api/Blog");
-        setBlogs(res?.data?.data?.blogs || []);
+        const data = res?.data?.data?.blogs || [];
+        setBlogs(data.length ? data : fallbackStories);
       } catch (e) {
-        setBlogs([]);
+        setBlogs(fallbackStories);
       }
     };
     fetchBlogs();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const getVisible = () =>
@@ -41,15 +70,17 @@ const HomePage = () => {
             <span>của sự sống & nghệ thuật</span>
           </h1>
           <p>
-            Thiết kế trải nghiệm hiến máu như một không gian nội thất hiện đại,
-            nhẹ nhàng và tinh tế.
+            Nội thất hiện đại, tinh tế và ấm áp — được thiết kế riêng cho tổ ấm
+            của bạn với vật liệu tự nhiên và cảm hứng đương đại.
           </p>
 
           <div className="hero-btns">
-            <button onClick={() => navigate("/register")}>
-              Đặt lịch trải nghiệm
+            <button onClick={() => navigate("/products")}>
+              Khám phá bộ sưu tập
             </button>
-            <button className="ghost">Xem catalogue</button>
+            <button className="ghost" onClick={() => navigate("/design")}>
+              Thiết kế 3D
+            </button>
           </div>
         </div>
 
@@ -94,7 +125,7 @@ const HomePage = () => {
             <div
               key={i}
               className="gallery-card"
-              onClick={() => navigate(`/blog/${b.id}`)}
+              onClick={() => navigate("/design")}
             >
               <img src={b?.imageUrl} alt="" />
               <div className="overlay">
@@ -125,8 +156,9 @@ const HomePage = () => {
             Không gian thiết kế <span>cảm xúc</span>
           </h2>
           <p>
-            Chúng tôi tái định nghĩa trải nghiệm hiến máu thành một hành trình
-            nhẹ nhàng như bước vào một showroom nội thất cao cấp.
+            Chúng tôi biến mỗi căn phòng thành một trải nghiệm cảm xúc, tựa như
+            bước vào một showroom nội thất cao cấp được chăm chút đến từng chi
+            tiết.
           </p>
 
           <ul>
@@ -139,10 +171,10 @@ const HomePage = () => {
 
       {/* STATS */}
       <section className="stats">
-        <div>10K+ Donors</div>
-        <div>33K+ Lives Saved</div>
-        <div>75+ Partners</div>
-        <div>20+ Awards</div>
+        <div><strong>12K+</strong><span>Khách hàng</span></div>
+        <div><strong>4.5K+</strong><span>Dự án hoàn thành</span></div>
+        <div><strong>75+</strong><span>Đối tác</span></div>
+        <div><strong>20+</strong><span>Giải thưởng</span></div>
       </section>
 
     </div>

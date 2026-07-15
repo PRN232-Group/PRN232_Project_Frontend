@@ -2,19 +2,22 @@ import { createBrowserRouter } from "react-router-dom";
 import { lazy, Suspense } from "react";
 
 import RootLayout from "../layout/RootLayout";
+import DashboardShell from "../components/dashboard/DashboardShell";
+import Loading from "../components/Loading";
 
-const Loading = () => <div>Loading...</div>;
+const load = (Comp) => (
+  <Suspense fallback={<Loading />}>
+    <Comp />
+  </Suspense>
+);
 
-/* ===========================
-   AUTH
-=========================== */
-const LoginPage = lazy(() => import("../pages/customer/LoginPage"));
-const RegisterPage = lazy(() => import("../pages/customer/RegisterPage"));
+/* ===== AUTH ===== */
+const LoginPage = lazy(() => import("../pages/customer/loginPage"));
+const RegisterPage = lazy(() => import("../pages/customer/registerPage"));
+const ForgotPasswordPage = lazy(() => import("../pages/customer/ForgotPasswordPage"));
 
-/* ===========================
-   CUSTOMER
-=========================== */
-const HomePage = lazy(() => import("../pages/customer/HomePage"));
+/* ===== CUSTOMER ===== */
+const HomePage = lazy(() => import("../pages/customer/homePage"));
 const ProfilePage = lazy(() => import("../pages/customer/ProfilePage"));
 const ProductListPage = lazy(() => import("../pages/customer/ProductListPage"));
 const ProductDetailPage = lazy(() => import("../pages/customer/ProductDetailPage"));
@@ -27,199 +30,117 @@ const OrderDetailPage = lazy(() => import("../pages/customer/OrderDetailPage"));
 const CustomerChatPage = lazy(() => import("../pages/customer/CustomerChatPage"));
 const ProductReviewPage = lazy(() => import("../pages/customer/ProductReviewPage"));
 
-/* ===========================
-   ADMIN
-=========================== */
-const AdminPage = lazy(() => import("../pages/admin/AdminPage"));
-const AdminDashboardPage = lazy(() => import("../pages/admin/AdminDashboardPage"));
+/* ===== ADMIN ===== */
+const AdminDashboardPage = lazy(() => import("../pages/admin/adminDashboardPage"));
 const UserManagementPage = lazy(() => import("../pages/admin/UserManagementPage"));
 const RoleManagementPage = lazy(() => import("../pages/admin/RoleManagementPage"));
 const CategoryManagementPage = lazy(() => import("../pages/admin/CategoryManagementPage"));
 const ContentManagementPage = lazy(() => import("../pages/admin/ContentManagementPage"));
 const SystemLogPage = lazy(() => import("../pages/admin/SystemLogPage"));
 
-export const router = createBrowserRouter([
-  /* ===========================
-     PUBLIC ROUTES (KHÔNG layout)
-  =========================== */
-  {
-    path: "/login",
-    element: (
-      <Suspense fallback={<Loading />}>
-        <LoginPage />
-      </Suspense>
-    ),
-  },
-  {
-    path: "/register",
-    element: (
-      <Suspense fallback={<Loading />}>
-        <RegisterPage />
-      </Suspense>
-    ),
-  },
+/* ===== MANAGER ===== */
+const ManagerDashboardPage = lazy(() => import("../pages/manager/ManagerDashboardPage"));
+const ProductManagementPage = lazy(() => import("../pages/manager/ProductManagementPage"));
+const OrderManagementPage = lazy(() => import("../pages/manager/OrderManagementPage"));
+const PriceManagementPage = lazy(() => import("../pages/manager/PriceManagementPage"));
+const BestSellingProductsPage = lazy(() => import("../pages/manager/BestSellingProductsPage"));
+const RevenueReportPage = lazy(() => import("../pages/manager/RevenueReportPage"));
 
-  /* ===========================
-     CUSTOMER ROUTES
-  =========================== */
+/* ===== SALES ===== */
+const SalesDashboardPage = lazy(() => import("../pages/sales/SalesDashboardPage"));
+const SalesOrderManagementPage = lazy(() => import("../pages/sales/SalesOrderManagementPage"));
+const QuotationRequestPage = lazy(() => import("../pages/sales/QuotationRequestPage"));
+const QuotationApprovalPage = lazy(() => import("../pages/sales/QuotationApprovalPage"));
+const DesignRequestDetailPage = lazy(() => import("../pages/sales/DesignRequestDetailPage"));
+const CustomerChatManagementPage = lazy(() => import("../pages/sales/CustomerChatManagementPage"));
+
+/* ===== PRODUCTION ===== */
+const ProductionDashboardPage = lazy(() => import("../pages/production/ProductionDashboardPage"));
+const ProductionOrderListPage = lazy(() => import("../pages/production/ProductionOrderListPage"));
+const ProductionOrderDetailPage = lazy(() => import("../pages/production/ProductionOrderDetailPage"));
+const ProductionProgressPage = lazy(() => import("../pages/production/ProductionProgressPage"));
+const DeliveryUpdatePage = lazy(() => import("../pages/production/DeliveryUpdatePage"));
+
+export const router = createBrowserRouter([
+  /* ===== PUBLIC ===== */
+  { path: "/login", element: load(LoginPage) },
+  { path: "/register", element: load(RegisterPage) },
+  { path: "/forgot-password", element: load(ForgotPasswordPage) },
+
+  /* ===== CUSTOMER ===== */
   {
     path: "/",
     element: <RootLayout />,
     children: [
-      {
-        index: true,
-        element: (
-          <Suspense fallback={<Loading />}>
-            <HomePage />
-          </Suspense>
-        ),
-      },
-      {
-        path: "products",
-        element: (
-          <Suspense fallback={<Loading />}>
-            <ProductListPage />
-          </Suspense>
-        ),
-      },
-      {
-        path: "products/:id",
-        element: (
-          <Suspense fallback={<Loading />}>
-            <ProductDetailPage />
-          </Suspense>
-        ),
-      },
-      {
-        path: "search",
-        element: (
-          <Suspense fallback={<Loading />}>
-            <ProductSearchPage />
-          </Suspense>
-        ),
-      },
-      {
-        path: "design",
-        element: (
-          <Suspense fallback={<Loading />}>
-            <InteriorDesignPage />
-          </Suspense>
-        ),
-      },
-      {
-        path: "profile",
-        element: (
-          <Suspense fallback={<Loading />}>
-            <ProfilePage />
-          </Suspense>
-        ),
-      },
-      {
-        path: "cart",
-        element: (
-          <Suspense fallback={<Loading />}>
-            <CartPage />
-          </Suspense>
-        ),
-      },
-      {
-        path: "checkout",
-        element: (
-          <Suspense fallback={<Loading />}>
-            <CheckoutPage />
-          </Suspense>
-        ),
-      },
-      {
-        path: "orders",
-        element: (
-          <Suspense fallback={<Loading />}>
-            <OrderListPage />
-          </Suspense>
-        ),
-      },
-      {
-        path: "orders/:id",
-        element: (
-          <Suspense fallback={<Loading />}>
-            <OrderDetailPage />
-          </Suspense>
-        ),
-      },
-      {
-        path: "chat",
-        element: (
-          <Suspense fallback={<Loading />}>
-            <CustomerChatPage />
-          </Suspense>
-        ),
-      },
-      {
-        path: "review",
-        element: (
-          <Suspense fallback={<Loading />}>
-            <ProductReviewPage />
-          </Suspense>
-        ),
-      },
+      { index: true, element: load(HomePage) },
+      { path: "products", element: load(ProductListPage) },
+      { path: "products/:id", element: load(ProductDetailPage) },
+      { path: "search", element: load(ProductSearchPage) },
+      { path: "design", element: load(InteriorDesignPage) },
+      { path: "profile", element: load(ProfilePage) },
+      { path: "cart", element: load(CartPage) },
+      { path: "checkout", element: load(CheckoutPage) },
+      { path: "orders", element: load(OrderListPage) },
+      { path: "orders/:id", element: load(OrderDetailPage) },
+      { path: "chat", element: load(CustomerChatPage) },
+      { path: "review", element: load(ProductReviewPage) },
+      { path: "products/:id/review", element: load(ProductReviewPage) },
     ],
   },
 
-  /* ===========================
-     ADMIN ROUTES
-  =========================== */
+  /* ===== ADMIN ===== */
   {
     path: "/admin",
-    element: <AdminPage />,
+    element: <DashboardShell section="admin" />,
     children: [
-      {
-        index: true,
-        element: (
-          <Suspense fallback={<Loading />}>
-            <AdminDashboardPage />
-          </Suspense>
-        ),
-      },
-      {
-        path: "users",
-        element: (
-          <Suspense fallback={<Loading />}>
-            <UserManagementPage />
-          </Suspense>
-        ),
-      },
-      {
-        path: "roles",
-        element: (
-          <Suspense fallback={<Loading />}>
-            <RoleManagementPage />
-          </Suspense>
-        ),
-      },
-      {
-        path: "categories",
-        element: (
-          <Suspense fallback={<Loading />}>
-            <CategoryManagementPage />
-          </Suspense>
-        ),
-      },
-      {
-        path: "contents",
-        element: (
-          <Suspense fallback={<Loading />}>
-            <ContentManagementPage />
-          </Suspense>
-        ),
-      },
-      {
-        path: "system-logs",
-        element: (
-          <Suspense fallback={<Loading />}>
-            <SystemLogPage />
-          </Suspense>
-        ),
-      },
+      { index: true, element: load(AdminDashboardPage) },
+      { path: "users", element: load(UserManagementPage) },
+      { path: "roles", element: load(RoleManagementPage) },
+      { path: "categories", element: load(CategoryManagementPage) },
+      { path: "contents", element: load(ContentManagementPage) },
+      { path: "system-logs", element: load(SystemLogPage) },
+    ],
+  },
+
+  /* ===== MANAGER ===== */
+  {
+    path: "/manager",
+    element: <DashboardShell section="manager" />,
+    children: [
+      { index: true, element: load(ManagerDashboardPage) },
+      { path: "products", element: load(ProductManagementPage) },
+      { path: "orders", element: load(OrderManagementPage) },
+      { path: "prices", element: load(PriceManagementPage) },
+      { path: "best-selling", element: load(BestSellingProductsPage) },
+      { path: "revenue", element: load(RevenueReportPage) },
+    ],
+  },
+
+  /* ===== SALES ===== */
+  {
+    path: "/sales",
+    element: <DashboardShell section="sales" />,
+    children: [
+      { index: true, element: load(SalesDashboardPage) },
+      { path: "orders", element: load(SalesOrderManagementPage) },
+      { path: "quotations", element: load(QuotationRequestPage) },
+      { path: "quotation-approval", element: load(QuotationApprovalPage) },
+      { path: "design-requests", element: load(DesignRequestDetailPage) },
+      { path: "design-requests/:id", element: load(DesignRequestDetailPage) },
+      { path: "chat", element: load(CustomerChatManagementPage) },
+    ],
+  },
+
+  /* ===== PRODUCTION ===== */
+  {
+    path: "/production",
+    element: <DashboardShell section="production" />,
+    children: [
+      { index: true, element: load(ProductionDashboardPage) },
+      { path: "orders", element: load(ProductionOrderListPage) },
+      { path: "orders/:id", element: load(ProductionOrderDetailPage) },
+      { path: "progress", element: load(ProductionProgressPage) },
+      { path: "delivery", element: load(DeliveryUpdatePage) },
     ],
   },
 ]);
