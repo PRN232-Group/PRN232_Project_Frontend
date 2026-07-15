@@ -22,7 +22,6 @@ const CartPage = () => {
       setCartItems(res.data || []);
     } catch (err) {
       console.error(err);
-      setError("Không thể tải giỏ hàng");
 
       // fallback localStorage
       const localCart = JSON.parse(localStorage.getItem("cart")) || [];

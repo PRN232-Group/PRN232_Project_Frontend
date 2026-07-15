@@ -40,7 +40,27 @@ const ProfilePage = () => {
       setPreview(res.data.avatar || "");
     } catch (err) {
       console.error(err);
-      setError("Không thể tải profile");
+      // fallback to the logged-in user stored locally
+      let stored = null;
+      try {
+        stored = JSON.parse(localStorage.getItem("user"));
+      } catch {
+        stored = null;
+      }
+      const demo = {
+        fullName: stored?.name || "Khách hàng Interior Studio",
+        email: stored?.email || "guest@interiorstudio.com",
+        phone: "0900 000 000",
+        address: "TP. Hồ Chí Minh, Việt Nam",
+        avatar: "",
+      };
+      setUser(demo);
+      setForm({
+        fullName: demo.fullName,
+        phone: demo.phone,
+        address: demo.address,
+      });
+      setPreview("");
     } finally {
       setLoading(false);
     }

@@ -40,7 +40,6 @@ const ProductSearchPage = () => {
       setCurrentPage(1);
     } catch (err) {
       console.error(err);
-      setError("Không thể tìm sản phẩm");
 
       // fallback demo
       setProducts([
