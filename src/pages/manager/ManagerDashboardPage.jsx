@@ -80,24 +80,20 @@ const ManagerDashboardPage = () => {
 
           {/* QUICK ACTIONS */}
           <div className="actions">
-            <button onClick={() => navigate("/manager/users")}>
-              Manage Users
+            <button onClick={() => navigate("/manager/products")}>
+              Quản lý sản phẩm
             </button>
 
             <button onClick={() => navigate("/manager/orders")}>
-              Manage Orders
+              Quản lý đơn hàng
             </button>
 
-            <button
-              onClick={() =>
-                navigate("/manager/best-selling-products")
-              }
-            >
-              Best Selling Products
+            <button onClick={() => navigate("/manager/best-selling")}>
+              Sản phẩm bán chạy
             </button>
 
-            <button onClick={() => navigate("/manager/logs")}>
-              System Logs
+            <button onClick={() => navigate("/manager/revenue")}>
+              Báo cáo doanh thu
             </button>
           </div>
         </>

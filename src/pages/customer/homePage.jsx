@@ -10,16 +10,45 @@ const HomePage = () => {
   const [index, setIndex] = useState(0);
   const visible = 3;
 
+  const fallbackStories = [
+    {
+      id: "living-warmth",
+      title: "Ấm áp trong từng đường nét gỗ",
+      imageUrl:
+        "https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?w=800&q=80",
+    },
+    {
+      id: "soft-minimal",
+      title: "Tối giản mà tinh tế",
+      imageUrl:
+        "https://images.unsplash.com/photo-1615529182904-14819c35db37?w=800&q=80",
+    },
+    {
+      id: "natural-light",
+      title: "Không gian ngập tràn ánh sáng",
+      imageUrl:
+        "https://images.unsplash.com/photo-1618221195710-dd6b41faaea6?w=800&q=80",
+    },
+    {
+      id: "cozy-bedroom",
+      title: "Phòng ngủ như một chốn nghỉ dưỡng",
+      imageUrl:
+        "https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=800&q=80",
+    },
+  ];
+
   useEffect(() => {
     const fetchBlogs = async () => {
       try {
         const res = await axios.get("https://localhost:7293/api/Blog");
-        setBlogs(res?.data?.data?.blogs || []);
+        const data = res?.data?.data?.blogs || [];
+        setBlogs(data.length ? data : fallbackStories);
       } catch (e) {
-        setBlogs([]);
+        setBlogs(fallbackStories);
       }
     };
     fetchBlogs();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const getVisible = () =>
@@ -96,7 +125,7 @@ const HomePage = () => {
             <div
               key={i}
               className="gallery-card"
-              onClick={() => navigate(`/blog/${b.id}`)}
+              onClick={() => navigate("/design")}
             >
               <img src={b?.imageUrl} alt="" />
               <div className="overlay">

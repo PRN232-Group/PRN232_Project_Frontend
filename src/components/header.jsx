@@ -47,7 +47,7 @@ const Header = () => {
 
   const salesMenu = [
     { label: "Sales Dashboard", href: "/sales" },
-    { label: "Yêu cầu báo giá", href: "/sales/quotation-request" },
+    { label: "Yêu cầu báo giá", href: "/sales/quotations" },
     { label: "Duyệt báo giá", href: "/sales/quotation-approval" },
     { label: "Quản lý đơn hàng", href: "/sales/orders" },
     { label: "Chat khách hàng", href: "/sales/chat" },

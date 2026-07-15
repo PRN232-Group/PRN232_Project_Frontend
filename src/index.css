@@ -99,69 +99,36 @@ button {
    REUSABLE ANIMATIONS
 ============================================================ */
 @keyframes fadeInUp {
-  from {
-    opacity: 0;
-    transform: translateY(24px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+  from { opacity: 0; transform: translateY(24px); }
+  to { opacity: 1; transform: translateY(0); }
 }
-
 @keyframes fadeIn {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
-
 @keyframes floatY {
-  0%,
-  100% {
-    transform: translateY(0);
-  }
-  50% {
-    transform: translateY(-10px);
-  }
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
 }
-
 @keyframes shimmer {
-  0% {
-    background-position: -200% 0;
-  }
-  100% {
-    background-position: 200% 0;
-  }
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+@keyframes popIn {
+  0% { opacity: 0; transform: scale(0.96) translateY(10px); }
+  100% { opacity: 1; transform: scale(1) translateY(0); }
 }
 
-.anim-fade-up {
-  animation: fadeInUp 0.7s var(--ease-out) both;
-}
-.anim-fade-in {
-  animation: fadeIn 0.6s var(--ease) both;
-}
+.anim-fade-up { animation: fadeInUp 0.7s var(--ease-out) both; }
+.anim-fade-in { animation: fadeIn 0.6s var(--ease) both; }
 
-/* Reveal-on-scroll friendly stagger helpers */
-.delay-1 {
-  animation-delay: 0.08s;
-}
-.delay-2 {
-  animation-delay: 0.16s;
-}
-.delay-3 {
-  animation-delay: 0.24s;
-}
-.delay-4 {
-  animation-delay: 0.32s;
-}
+.delay-1 { animation-delay: 0.08s; }
+.delay-2 { animation-delay: 0.16s; }
+.delay-3 { animation-delay: 0.24s; }
+.delay-4 { animation-delay: 0.32s; }
 
 @media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
+  *, *::before, *::after {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
@@ -170,15 +137,469 @@ button {
 }
 
 /* ============================================================
-   ANT DESIGN TABLE HEADER (warm theme)
+   SHARED PAGE SCAFFOLD
+   Applies to the simple/raw pages that use these class names.
+   Scoped away from home/header/footer (own stylesheets) and antd.
 ============================================================ */
-.custom-table-blog .ant-table-thead > tr > th,
-.custom-table-user .ant-table-thead > tr > th,
-.custom-ant-table .ant-table-thead > tr > th {
-  background-color: var(--clay);
+.page,
+.product-list-page,
+.product-search-page,
+.cart-page,
+.checkout-page,
+.order-list-page,
+.order-detail-page,
+.profile-page,
+.product-detail-page,
+.product-review-page,
+.customer-chat-page,
+.interior-design-page,
+.forgot-password-page,
+.manager-dashboard,
+.best-selling-page,
+.order-management-page,
+.price-management-page,
+.product-management-page,
+.revenue-report-page,
+.sales-dashboard,
+.sales-order-management-page,
+.quotation-request-page,
+.quotation-approval-page,
+.design-request-detail-page,
+.customer-chat-management-page,
+.production-dashboard,
+.production-order-list-page,
+.production-order-detail-page,
+.production-progress-page,
+.delivery-update-page {
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: clamp(20px, 4vw, 40px);
+  animation: fadeIn 0.5s var(--ease) both;
+}
+
+/* Section titles inside content pages */
+.product-list-page > h2,
+.product-search-page > h2,
+.cart-page > h2,
+.checkout-page > h2,
+.order-list-page > h2,
+.profile-page > h2,
+.product-review-page > h2,
+.customer-chat-page > h2,
+.manager-dashboard > h2,
+.sales-dashboard > h2,
+.production-dashboard > h2,
+.page > h2 {
+  font-size: clamp(1.6rem, 3vw, 2.2rem);
+  position: relative;
+  padding-bottom: 14px;
+  margin-bottom: 28px;
+}
+.product-list-page > h2::after,
+.cart-page > h2::after,
+.order-list-page > h2::after,
+.profile-page > h2::after,
+.manager-dashboard > h2::after,
+.sales-dashboard > h2::after,
+.production-dashboard > h2::after,
+.page > h2::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 56px;
+  height: 4px;
+  border-radius: var(--radius-pill);
+  background: linear-gradient(90deg, var(--clay), var(--clay-soft));
+}
+
+/* ============================================================
+   BUTTONS (native buttons inside content pages)
+============================================================ */
+.page button,
+.toolbar button,
+.actions button,
+.pagination button,
+.cart-summary button,
+.qty-control button,
+.checkout-btn,
+.remove-btn,
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: none;
+  border-radius: var(--radius-pill);
+  background: var(--clay);
+  color: #fff;
+  font-weight: 600;
+  font-size: 0.95rem;
+  padding: 11px 22px;
+  transition: transform var(--transition), background var(--transition),
+    box-shadow var(--transition);
+  box-shadow: var(--shadow-xs);
+}
+.page button:hover,
+.toolbar button:hover,
+.actions button:hover,
+.pagination button:hover:not(:disabled),
+.cart-summary button:hover,
+.checkout-btn:hover,
+.btn:hover {
+  background: var(--clay-dark);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-clay);
+}
+.pagination button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.btn-ghost,
+.btn.ghost {
+  background: transparent;
+  color: var(--clay-dark);
+  border: 1.5px solid var(--line);
+  box-shadow: none;
+}
+.btn-ghost:hover,
+.btn.ghost:hover {
+  background: var(--clay-tint);
+  border-color: var(--clay-soft);
+}
+
+.remove-btn,
+.btn-danger {
+  background: transparent;
+  color: var(--danger);
+  border: 1.5px solid color-mix(in srgb, var(--danger) 35%, transparent);
+  box-shadow: none;
+  padding: 8px 16px;
+}
+.remove-btn:hover,
+.btn-danger:hover {
+  background: var(--danger);
   color: #fff;
 }
 
-.custom-table-warehouse .ant-table {
-  height: auto;
+/* small quantity stepper buttons */
+.qty-control {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--cream);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-pill);
+  padding: 4px 6px;
+}
+.qty-control button {
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  font-size: 1.1rem;
+  line-height: 1;
+}
+.qty-control span {
+  min-width: 22px;
+  text-align: center;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+/* ============================================================
+   FORM CONTROLS (native inputs/selects inside content pages)
+============================================================ */
+.page input,
+.page select,
+.page textarea,
+.toolbar input,
+.toolbar select,
+.field input,
+.field select,
+.field textarea {
+  width: 100%;
+  font-family: inherit;
+  font-size: 0.95rem;
+  color: var(--ink);
+  background: var(--surface);
+  border: 1.5px solid var(--line);
+  border-radius: var(--border-radius);
+  padding: 12px 15px;
+  transition: border-color var(--transition), box-shadow var(--transition);
+}
+.page input::placeholder,
+.toolbar input::placeholder,
+.field input::placeholder,
+.field textarea::placeholder {
+  color: var(--muted);
+}
+.page input:focus,
+.page select:focus,
+.page textarea:focus,
+.toolbar input:focus,
+.toolbar select:focus,
+.field input:focus,
+.field select:focus,
+.field textarea:focus {
+  outline: none;
+  border-color: var(--clay);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--clay) 16%, transparent);
+}
+
+/* ============================================================
+   TOOLBAR
+============================================================ */
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 28px;
+}
+.toolbar input { flex: 1 1 220px; }
+.toolbar select { flex: 0 0 auto; width: auto; min-width: 150px; }
+.toolbar button { flex: 0 0 auto; }
+
+/* ============================================================
+   CARDS + GRIDS
+============================================================ */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+  gap: 24px;
+}
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  padding: 18px;
+  box-shadow: var(--shadow-sm);
+  transition: transform var(--transition-slow), box-shadow var(--transition-slow);
+  animation: popIn 0.5s var(--ease-out) both;
+}
+.card:hover {
+  transform: translateY(-6px);
+  box-shadow: var(--shadow-md);
+}
+.card img {
+  width: 100%;
+  height: 200px;
+  object-fit: cover;
+  border-radius: var(--border-radius);
+  margin-bottom: 14px;
+  cursor: pointer;
+}
+.card h3 {
+  font-size: 1.1rem;
+  margin-bottom: 6px;
+}
+.card .price {
+  color: var(--clay-dark);
+  font-weight: 700;
+  font-size: 1.15rem;
+  margin-bottom: 14px;
+}
+.card .actions {
+  display: flex;
+  gap: 10px;
+  margin: 0;
+}
+.card .actions button { flex: 1; padding: 10px 14px; }
+.card .actions button:last-child {
+  background: transparent;
+  color: var(--clay-dark);
+  border: 1.5px solid var(--line);
+  box-shadow: none;
+}
+.card .actions button:last-child:hover {
+  background: var(--clay-tint);
+  border-color: var(--clay-soft);
+}
+
+/* ============================================================
+   STATS / KPI CARDS (dashboards)
+============================================================ */
+.manager-dashboard .grid,
+.sales-dashboard .grid,
+.production-dashboard .grid {
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  margin-bottom: 30px;
+}
+.manager-dashboard .card,
+.sales-dashboard .card,
+.production-dashboard .card {
+  padding: 24px;
+  border-left: 4px solid var(--clay);
+}
+.manager-dashboard .card h3,
+.sales-dashboard .card h3,
+.production-dashboard .card h3 {
+  font-family: var(--font-sans);
+  font-size: 0.82rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+  font-weight: 600;
+}
+.manager-dashboard .card p,
+.sales-dashboard .card p,
+.production-dashboard .card p {
+  font-family: var(--font-serif);
+  font-size: 1.9rem;
+  font-weight: 700;
+  color: var(--ink);
+  margin: 6px 0 0;
+}
+.manager-dashboard .actions,
+.sales-dashboard .actions,
+.production-dashboard .actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+}
+
+/* ============================================================
+   TABLES (native tables inside content pages)
+============================================================ */
+.page table,
+.cart-table,
+.data-table,
+.order-list-page table,
+.product-management-page table,
+.order-management-page table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
+}
+.page table thead th,
+.cart-table thead th,
+.data-table thead th,
+.order-list-page table thead th {
+  background: var(--clay-tint);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  font-weight: 600;
+  font-size: 0.85rem;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  text-align: left;
+  padding: 15px 18px;
+}
+.page table tbody td,
+.cart-table tbody td,
+.data-table tbody td,
+.order-list-page table tbody td {
+  padding: 15px 18px;
+  border-top: 1px solid var(--line);
+  color: var(--body);
+}
+.page table tbody tr,
+.cart-table tbody tr,
+.data-table tbody tr {
+  transition: background var(--transition);
+}
+.page table tbody tr:hover,
+.cart-table tbody tr:hover,
+.data-table tbody tr:hover {
+  background: var(--cream);
+}
+
+/* ============================================================
+   SUMMARY PANELS (cart / checkout)
+============================================================ */
+.cart-summary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  margin-top: 28px;
+  padding: 22px 26px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+}
+.cart-summary h3 {
+  margin: 0;
+  font-size: 1.5rem;
+  color: var(--clay-dark);
+}
+.checkout-btn { padding: 13px 34px; font-size: 1rem; }
+
+/* ============================================================
+   PAGINATION
+============================================================ */
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  margin-top: 34px;
+}
+.pagination span {
+  color: var(--muted);
+  font-weight: 500;
+}
+
+/* ============================================================
+   STATES
+============================================================ */
+.error {
+  background: color-mix(in srgb, var(--danger) 10%, var(--surface));
+  color: var(--danger);
+  border: 1px solid color-mix(in srgb, var(--danger) 30%, transparent);
+  border-radius: var(--border-radius);
+  padding: 12px 16px;
+  font-weight: 500;
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  border-radius: var(--radius-pill);
+  font-size: 0.78rem;
+  font-weight: 600;
+  background: var(--clay-tint);
+  color: var(--clay-dark);
+}
+.badge-success { background: color-mix(in srgb, var(--success) 16%, #fff); color: var(--success); }
+.badge-warning { background: color-mix(in srgb, var(--warning) 18%, #fff); color: var(--warning); }
+.badge-danger { background: color-mix(in srgb, var(--danger) 14%, #fff); color: var(--danger); }
+
+/* ============================================================
+   ANT DESIGN OVERRIDES (warm theme polish)
+============================================================ */
+.ant-table-wrapper .ant-table {
+  border-radius: var(--radius-lg);
+}
+.ant-table-thead > tr > th {
+  background: var(--clay-tint) !important;
+  color: var(--ink) !important;
+  font-weight: 600 !important;
+}
+.custom-table-blog .ant-table-thead > tr > th,
+.custom-table-user .ant-table-thead > tr > th,
+.custom-ant-table .ant-table-thead > tr > th {
+  background: var(--clay) !important;
+  color: #fff !important;
+}
+.ant-card {
+  border-radius: var(--radius-lg) !important;
+  border-color: var(--line) !important;
+}
+.ant-statistic-title {
+  color: var(--muted) !important;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-size: 0.8rem !important;
 }
