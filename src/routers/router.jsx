@@ -2,19 +2,18 @@ import { createBrowserRouter } from "react-router-dom";
 import { lazy, Suspense } from "react";
 
 import RootLayout from "../layout/RootLayout";
-
-const Loading = () => <div>Loading...</div>;
+import Loading from "../components/Loading";
 
 /* ===========================
    AUTH
 =========================== */
-const LoginPage = lazy(() => import("../pages/customer/LoginPage"));
-const RegisterPage = lazy(() => import("../pages/customer/RegisterPage"));
+const LoginPage = lazy(() => import("../pages/customer/loginPage"));
+const RegisterPage = lazy(() => import("../pages/customer/registerPage"));
 
 /* ===========================
    CUSTOMER
 =========================== */
-const HomePage = lazy(() => import("../pages/customer/HomePage"));
+const HomePage = lazy(() => import("../pages/customer/homePage"));
 const ProfilePage = lazy(() => import("../pages/customer/ProfilePage"));
 const ProductListPage = lazy(() => import("../pages/customer/ProductListPage"));
 const ProductDetailPage = lazy(() => import("../pages/customer/ProductDetailPage"));
@@ -30,8 +29,8 @@ const ProductReviewPage = lazy(() => import("../pages/customer/ProductReviewPage
 /* ===========================
    ADMIN
 =========================== */
-const AdminPage = lazy(() => import("../pages/admin/AdminPage"));
-const AdminDashboardPage = lazy(() => import("../pages/admin/AdminDashboardPage"));
+const AdminPage = lazy(() => import("../pages/admin/adminPage"));
+const AdminDashboardPage = lazy(() => import("../pages/admin/adminDashboardPage"));
 const UserManagementPage = lazy(() => import("../pages/admin/UserManagementPage"));
 const RoleManagementPage = lazy(() => import("../pages/admin/RoleManagementPage"));
 const CategoryManagementPage = lazy(() => import("../pages/admin/CategoryManagementPage"));

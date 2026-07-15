@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import "@fortawesome/fontawesome-free/css/all.min.css";
-import "../../styles/customer/loginPage.css";
+import "../../styles/customer/authPage.css";
 
 function LoginPage() {
   const navigate = useNavigate();
@@ -64,16 +64,19 @@ navigate("/", { replace: true });
             alt="Login"
             className="login-img"
           />
-          <div className="login-brand">My App</div>
+          <div className="login-brand">Interior Studio</div>
           <div className="login-copyright">
-            © 2026 My App. All rights reserved.
+            © {new Date().getFullYear()} Interior Studio. All rights reserved.
           </div>
         </div>
 
         {/* RIGHT */}
         <div className="login-right">
           <div className="login-form-box">
-            <h2 style={{ marginBottom: 24, color: "#1976d2" }}>Login</h2>
+            <h2>Đăng nhập</h2>
+            <p style={{ color: "var(--muted)", marginBottom: 4, fontSize: 14 }}>
+              Chào mừng trở lại Interior Studio
+            </p>
 
             <form className="login-form" onSubmit={handleSubmit}>
               <input
@@ -120,12 +123,12 @@ navigate("/", { replace: true });
               )}
 
               <button className="login-btn" disabled={loading}>
-                {loading ? "Loading..." : "Login"}
+                {loading ? "Đang đăng nhập..." : "Đăng nhập"}
               </button>
 
               <div className="login-link">
-                Don’t have an account?{" "}
-                <span onClick={() => navigate("/register")}>Register</span>
+                Chưa có tài khoản?{" "}
+                <span onClick={() => navigate("/register")}>Đăng ký ngay</span>
               </div>
             </form>
 

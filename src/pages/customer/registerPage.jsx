@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import "@fortawesome/fontawesome-free/css/all.min.css";
-import "../../styles/customer/registerPage.css";
+import "../../styles/customer/authPage.css";
 
 const RegisterPage = () => {
   const navigate = useNavigate();
@@ -102,18 +102,19 @@ const RegisterPage = () => {
             alt="Register"
             className="login-img"
           />
-          <div className="login-brand">My App</div>
+          <div className="login-brand">Interior Studio</div>
           <div className="login-copyright">
-            © 2026 My App. All rights reserved.
+            © {new Date().getFullYear()} Interior Studio. All rights reserved.
           </div>
         </div>
 
         {/* RIGHT */}
         <div className="login-right">
           <div className="login-form-box">
-            <h2 style={{ marginBottom: 24, color: "#1976d2" }}>
-              Register
-            </h2>
+            <h2>Tạo tài khoản</h2>
+            <p style={{ color: "var(--muted)", marginBottom: 4, fontSize: 14 }}>
+              Bắt đầu hành trình thiết kế không gian của bạn
+            </p>
 
             <form className="login-form" onSubmit={handleSubmit}>
               <input
@@ -205,13 +206,13 @@ const RegisterPage = () => {
               )}
 
               <button className="login-btn" disabled={loading}>
-                {loading ? "Loading..." : "Register"}
+                {loading ? "Đang tạo tài khoản..." : "Đăng ký"}
               </button>
 
               <div className="login-link">
-                Already have an account?{" "}
+                Đã có tài khoản?{" "}
                 <span onClick={() => navigate("/login")}>
-                  Login
+                  Đăng nhập
                 </span>
               </div>
             </form>

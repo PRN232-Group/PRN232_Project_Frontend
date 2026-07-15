@@ -9,8 +9,13 @@ const SideBar = () => {
     const location = useLocation();
     const navigate = useNavigate();
 
-    const user = JSON.parse(localStorage.getItem("user"));
-    const role = user.role;
+    let user = null;
+    try {
+        user = JSON.parse(localStorage.getItem("user"));
+    } catch {
+        user = null;
+    }
+    const role = user?.role;
     
     // Danh sách tất cả các menu item
     
@@ -106,7 +111,7 @@ const SideBar = () => {
         <Sider
             width={250}
             style={{
-                background: "#073a82",
+                background: "#2c2723",
                 height: "100vh",
                 position: "fixed",
                 left: 0,
@@ -116,8 +121,9 @@ const SideBar = () => {
         >
             <div className="p-2 flex items-center justify-center">
                 <div className="w-full">
-                    <div className="flex items-center justify-center h-[60px]">
-                        <span className="text-2xl font-bold text-white text-center">HealthCare</span>
+                    <div className="flex items-center justify-center h-[60px] gap-2">
+                        <span className="grid h-9 w-9 place-items-center rounded-lg text-sm font-bold text-white" style={{ background: "linear-gradient(135deg, #b0784f, #8a5b34)" }}>IS</span>
+                        <span className="text-xl font-bold text-white text-center">Interior Studio</span>
                     </div>
                 </div>
             </div>
@@ -127,7 +133,7 @@ const SideBar = () => {
                 mode="vertical"
                 selectedKeys={[location.pathname]}
                 items={allMenuItems}
-                style={{ borderRight: 0, backgroundColor: "#073a82", color: "#fff" }}
+                style={{ borderRight: 0, backgroundColor: "#2c2723", color: "#fff" }}
             />
 
         </Sider>

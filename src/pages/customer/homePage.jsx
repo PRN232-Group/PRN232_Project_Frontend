@@ -41,15 +41,17 @@ const HomePage = () => {
             <span>của sự sống & nghệ thuật</span>
           </h1>
           <p>
-            Thiết kế trải nghiệm hiến máu như một không gian nội thất hiện đại,
-            nhẹ nhàng và tinh tế.
+            Nội thất hiện đại, tinh tế và ấm áp — được thiết kế riêng cho tổ ấm
+            của bạn với vật liệu tự nhiên và cảm hứng đương đại.
           </p>
 
           <div className="hero-btns">
-            <button onClick={() => navigate("/register")}>
-              Đặt lịch trải nghiệm
+            <button onClick={() => navigate("/products")}>
+              Khám phá bộ sưu tập
             </button>
-            <button className="ghost">Xem catalogue</button>
+            <button className="ghost" onClick={() => navigate("/design")}>
+              Thiết kế 3D
+            </button>
           </div>
         </div>
 
@@ -125,8 +127,9 @@ const HomePage = () => {
             Không gian thiết kế <span>cảm xúc</span>
           </h2>
           <p>
-            Chúng tôi tái định nghĩa trải nghiệm hiến máu thành một hành trình
-            nhẹ nhàng như bước vào một showroom nội thất cao cấp.
+            Chúng tôi biến mỗi căn phòng thành một trải nghiệm cảm xúc, tựa như
+            bước vào một showroom nội thất cao cấp được chăm chút đến từng chi
+            tiết.
           </p>
 
           <ul>
@@ -139,10 +142,10 @@ const HomePage = () => {
 
       {/* STATS */}
       <section className="stats">
-        <div>10K+ Donors</div>
-        <div>33K+ Lives Saved</div>
-        <div>75+ Partners</div>
-        <div>20+ Awards</div>
+        <div><strong>12K+</strong><span>Khách hàng</span></div>
+        <div><strong>4.5K+</strong><span>Dự án hoàn thành</span></div>
+        <div><strong>75+</strong><span>Đối tác</span></div>
+        <div><strong>20+</strong><span>Giải thưởng</span></div>
       </section>
 
     </div>

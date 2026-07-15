@@ -1,9 +1,51 @@
 :root {
-    --primary-color: #1677ff;
-    --secondary-color: #52c41a;
-    --danger-color: #ff4d4f;
-    --text-color: #333;
-    --background-color: #f5f5f5;
+  /* ===== Brand palette (warm interior studio) ===== */
+  --clay: #b0784f;          /* primary wood / clay */
+  --clay-dark: #8a5b34;     /* hover / active */
+  --clay-soft: #ddc0a1;     /* light accent */
+  --clay-tint: #f0e6da;     /* subtle fill */
 
-    --border-radius: 8px;
+  --cream: #f7f4ef;         /* page background */
+  --sand: #efe9e1;          /* alt background */
+  --surface: #ffffff;       /* cards / panels */
+
+  --ink: #2c2723;           /* headings / strong text */
+  --body: #4a423b;          /* body text */
+  --muted: #8a7f74;         /* secondary text */
+  --line: #e7ded2;          /* borders / dividers */
+
+  --danger: #c8493c;
+  --success: #5f7d55;
+  --warning: #d19a3f;
+
+  /* ===== Legacy token names (repointed to warm palette) ===== */
+  --primary-color: var(--clay);
+  --secondary-color: var(--clay-dark);
+  --danger-color: var(--danger);
+  --text-color: var(--ink);
+  --background-color: var(--cream);
+
+  /* ===== Radius ===== */
+  --radius-sm: 8px;
+  --border-radius: 12px;
+  --radius-lg: 20px;
+  --radius-xl: 28px;
+  --radius-pill: 999px;
+
+  /* ===== Shadows ===== */
+  --shadow-xs: 0 1px 2px rgba(44, 39, 35, 0.05);
+  --shadow-sm: 0 4px 14px rgba(44, 39, 35, 0.06);
+  --shadow-md: 0 12px 30px rgba(44, 39, 35, 0.09);
+  --shadow-lg: 0 24px 60px rgba(44, 39, 35, 0.14);
+  --shadow-clay: 0 12px 26px rgba(176, 120, 79, 0.28);
+
+  /* ===== Typography ===== */
+  --font-sans: "Poppins", system-ui, -apple-system, Segoe UI, sans-serif;
+  --font-serif: "Playfair Display", Georgia, "Times New Roman", serif;
+
+  /* ===== Motion ===== */
+  --ease: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --transition: 0.25s var(--ease);
+  --transition-slow: 0.45s var(--ease-out);
 }

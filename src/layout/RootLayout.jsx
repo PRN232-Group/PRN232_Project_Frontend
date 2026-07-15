@@ -4,10 +4,10 @@ import { Outlet } from "react-router-dom";
 
 function RootLayout() {
   return (
-    <div>
+    <div className="flex min-h-screen flex-col bg-[var(--cream)]">
       <HeaderComponent />
 
-      <main className="flex-1 bg-[#eaf3fb]">
+      <main className="flex-1">
         <Outlet />
       </main>
 
