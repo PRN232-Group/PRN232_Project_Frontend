@@ -358,17 +358,87 @@ export async function handleMockRequest(config) {
     return ok(db.profile);
   }
   if (method === "get" && urlPath === "/api/users") return ok([...db.users]);
+  if (method === "post" && urlPath === "/api/users") {
+    const actor = getUser();
+    if (!actor) fail(401, "Unauthorized");
+    const email = String(body.email || "")
+      .toLowerCase()
+      .trim();
+    if (!body.name?.trim() || !email) {
+      fail(400, "Nhập họ tên và email");
+    }
+    if (db.users.some((u) => u.email.toLowerCase() === email)) {
+      fail(400, "Email đã tồn tại");
+    }
+    const role = body.role || "Customer";
+    const ranks = { Customer: 1, Sales: 2, Manager: 3, Admin: 4 };
+    const actorRank = ranks[actor.role] || 0;
+    const targetRank = ranks[role] || 0;
+    if (targetRank >= actorRank) {
+      fail(403, "Không thể gán role ngang hoặc cao hơn mình");
+    }
+    const item = {
+      id: db.nextIds.user++,
+      name: body.name.trim(),
+      email,
+      phone: body.phone || "",
+      role,
+      status: "Active",
+      isLocked: false,
+    };
+    db.users.push(item);
+    return ok(item, 201);
+  }
+  {
+    const m = match(method, urlPath, {
+      method: "put",
+      re: /^\/api\/users\/(\d+)\/role$/,
+    });
+    if (m) {
+      const actor = getUser();
+      if (!actor) fail(401, "Unauthorized");
+      const i = db.users.findIndex((x) => String(x.id) === m[0]);
+      if (i < 0) notFound("User not found");
+      const target = db.users[i];
+      const ranks = { Customer: 1, Sales: 2, Manager: 3, Admin: 4 };
+      const actorRank = ranks[actor.role] || 0;
+      if (Number(actor.id) === Number(target.id)) {
+        fail(403, "Không thể đổi role của chính mình");
+      }
+      if ((ranks[target.role] || 0) >= actorRank) {
+        fail(403, "Không thể đổi role ngang hoặc cao hơn mình");
+      }
+      const nextRole = body.role;
+      if (!ranks[nextRole]) fail(400, "Role không hợp lệ");
+      if ((ranks[nextRole] || 0) >= actorRank) {
+        fail(403, "Không thể gán role ngang hoặc cao hơn mình");
+      }
+      db.users[i] = { ...target, role: nextRole };
+      return ok(db.users[i]);
+    }
+  }
   {
     const m = match(method, urlPath, {
       method: "put",
       re: /^\/api\/users\/(\d+)\/lock$/,
     });
     if (m) {
+      const actor = getUser();
+      if (!actor) fail(401, "Unauthorized");
       const i = db.users.findIndex((x) => String(x.id) === m[0]);
       if (i < 0) notFound("User not found");
+      const target = db.users[i];
+      const ranks = { Customer: 1, Sales: 2, Manager: 3, Admin: 4 };
+      const actorRank = ranks[actor.role] || 0;
+      if (Number(actor.id) === Number(target.id)) {
+        fail(403, "Không thể khóa chính mình");
+      }
+      if ((ranks[target.role] || 0) >= actorRank) {
+        fail(403, "Không thể khóa tài khoản role ngang hoặc cao hơn");
+      }
       const isLocked = body.isLocked === true;
       db.users[i] = {
-        ...db.users[i],
+        ...target,
         isLocked,
         status: isLocked ? "Locked" : "Active",
       };

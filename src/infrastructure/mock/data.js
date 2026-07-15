@@ -897,6 +897,7 @@ export const db = {
     content: 3,
     category: 7,
     role: 6,
+    user: 20,
     design: 5,
     quotationReq: 7,
     quotation: 3,

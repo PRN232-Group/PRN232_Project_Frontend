@@ -72,3 +72,42 @@ export function discountPct(price, marketPrice) {
   if (!m || m <= p) return 0;
   return Math.round(((m - p) / m) * 100);
 }
+
+/** Hierarchy: Customer < Sales < Manager < Admin */
+export const ROLE_RANK = Object.freeze({
+  Customer: 1,
+  Sales: 2,
+  Manager: 3,
+  Admin: 4,
+});
+
+export function roleRank(role) {
+  const canonical =
+    role === ROLES.CUSTOMER ||
+    role === ROLES.SALES ||
+    role === ROLES.MANAGER ||
+    role === ROLES.ADMIN
+      ? role
+      : ({
+          customer: ROLES.CUSTOMER,
+          sales: ROLES.SALES,
+          manager: ROLES.MANAGER,
+          admin: ROLES.ADMIN,
+        }[normalizeRole(role)] || ROLES.CUSTOMER);
+  return ROLE_RANK[canonical] || 0;
+}
+
+/** Actor may manage target only if target rank is strictly lower */
+export function canManageUser(actor, target) {
+  if (!actor || !target) return false;
+  if (actor.id != null && target.id != null && Number(actor.id) === Number(target.id)) {
+    return false;
+  }
+  return roleRank(actor.role) > roleRank(target.role);
+}
+
+/** Roles actor may assign (strictly below own rank) */
+export function assignableRoles(actorRole) {
+  const actorLevel = roleRank(actorRole);
+  return Object.values(ROLES).filter((r) => ROLE_RANK[r] < actorLevel);
+}
