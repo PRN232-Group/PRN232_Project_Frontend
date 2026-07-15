@@ -5,6 +5,7 @@ import "../../styles/customer/authPage.css";
 import UserContext from "../../contexts/UserContext";
 import { login as loginUseCase } from "../../application/services/authService";
 import { ROLES } from "../../domain/roles";
+import { isMockEnabled } from "../../infrastructure/mock/installMockApi";
 
 /** Mock accounts — khớp src/infrastructure/mock/data.js users */
 const MOCK_ACCOUNTS = [
@@ -88,7 +89,11 @@ function LoginPage() {
           : landing;
       navigate(go, { replace: true });
     } catch (err) {
-      setError(err?.message || "Đăng nhập thất bại!");
+      setError(
+        err?.response?.data?.message ||
+          err?.message ||
+          "Đăng nhập thất bại!"
+      );
     } finally {
       setLoading(false);
     }
@@ -111,11 +116,17 @@ function LoginPage() {
           : landing;
       navigate(go, { replace: true });
     } catch (err) {
-      setError(err?.message || "Đăng nhập thất bại!");
+      setError(
+        err?.response?.data?.message ||
+          err?.message ||
+          "Đăng nhập thất bại!"
+      );
     } finally {
       setLoading(false);
     }
   };
+
+  const showMockPanel = isMockEnabled();
 
   return (
     <div className="login-bg">
@@ -137,6 +148,7 @@ function LoginPage() {
             <h2>Đăng nhập</h2>
             <p className="login-subtitle">Chào mừng trở lại Interior Studio</p>
 
+            {showMockPanel && (
             <div className="mock-login-panel">
               <p className="mock-login-title">Mock verify — chọn role để vào ngay</p>
               <div className="mock-login-chips">
@@ -166,6 +178,7 @@ function LoginPage() {
                 phải = chỉ điền form
               </p>
             </div>
+            )}
 
             <form className="login-form" onSubmit={handleSubmit}>
               <input
