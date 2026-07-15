@@ -20,27 +20,35 @@ export async function login({ email, password, role }) {
     throw new Error("Mật khẩu phải có ít nhất 6 ký tự.");
   }
 
-  const res = await apiClient.post("/api/auth/login", {
-    email,
-    password,
-    role,
-  });
-  const payload = res.data || {};
-  const user = {
-    id: payload.id ?? payload.userId ?? 12,
-    name: payload.name || email.split("@")[0],
-    email: payload.email || email,
-    role: payload.role || role || "Customer",
-    phone: payload.phone,
-    avatarUrl: payload.avatarUrl,
-  };
-  if (payload.accessToken || payload.token) {
-    setAccessToken(payload.accessToken || payload.token);
-  } else if (isMockEnabled()) {
-    setAccessToken("mock-token");
+  try {
+    const res = await apiClient.post("/api/auth/login", {
+      email,
+      password,
+      role,
+    });
+    const payload = res.data || {};
+    const user = {
+      id: payload.id ?? payload.userId ?? 12,
+      name: payload.name || email.split("@")[0],
+      email: payload.email || email,
+      role: payload.role || role || "Customer",
+      phone: payload.phone,
+      avatarUrl: payload.avatarUrl,
+    };
+    if (payload.accessToken || payload.token) {
+      setAccessToken(payload.accessToken || payload.token);
+    } else if (isMockEnabled()) {
+      setAccessToken("mock-token");
+    }
+    setUser(user);
+    return { user, landing: ROLE_LANDING[user.role] || "/" };
+  } catch (err) {
+    const msg =
+      err?.response?.data?.message ||
+      err?.message ||
+      "Đăng nhập thất bại.";
+    throw new Error(msg);
   }
-  setUser(user);
-  return { user, landing: ROLE_LANDING[user.role] || "/" };
 }
 
 export async function register(payload) {

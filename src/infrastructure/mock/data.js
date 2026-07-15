@@ -244,6 +244,7 @@ export const db = {
       role: "Admin",
       phone: "0900000001",
       status: "Active",
+      isLocked: false,
     },
     {
       id: 2,
@@ -252,6 +253,7 @@ export const db = {
       role: "Manager",
       phone: "0900000002",
       status: "Active",
+      isLocked: false,
     },
     {
       id: 3,
@@ -260,6 +262,7 @@ export const db = {
       role: "Sales",
       phone: "0900000003",
       status: "Active",
+      isLocked: false,
     },
     {
       id: 12,
@@ -268,6 +271,7 @@ export const db = {
       role: "Customer",
       phone: "0901234567",
       status: "Active",
+      isLocked: false,
     },
     {
       id: 13,
@@ -276,6 +280,7 @@ export const db = {
       role: "Customer",
       phone: "0912345678",
       status: "Active",
+      isLocked: false,
     },
   ],
 

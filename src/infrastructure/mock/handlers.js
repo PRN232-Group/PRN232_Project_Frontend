@@ -13,6 +13,12 @@ function notFound(message = "Not found") {
   throw err;
 }
 
+function fail(status, message) {
+  const err = new Error(message);
+  err.response = { status, data: { message } };
+  throw err;
+}
+
 function match(method, urlPath, pattern) {
   if (method !== pattern.method) return null;
   const m = urlPath.match(pattern.re);
@@ -57,10 +63,15 @@ export async function handleMockRequest(config) {
       email: body.email,
       role,
       phone: "0901234567",
+      isLocked: false,
+      status: "Active",
     };
+    if (user.isLocked || user.status === "Locked") {
+      fail(403, "Tài khoản đã bị khóa. Liên hệ quản trị viên.");
+    }
     if (user.role === "Customer" || role === "Customer") {
       const cust = byEmail?.role === "Customer" ? byEmail : db.users.find((u) => u.id === 12);
-      if (cust) {
+      if (cust && !cust.isLocked) {
         db.profile = {
           id: cust.id,
           name: cust.name,
@@ -349,12 +360,19 @@ export async function handleMockRequest(config) {
   if (method === "get" && urlPath === "/api/users") return ok([...db.users]);
   {
     const m = match(method, urlPath, {
-      method: "delete",
-      re: /^\/api\/users\/(\d+)$/,
+      method: "put",
+      re: /^\/api\/users\/(\d+)\/lock$/,
     });
     if (m) {
-      db.users = db.users.filter((x) => String(x.id) !== m[0]);
-      return ok({ success: true });
+      const i = db.users.findIndex((x) => String(x.id) === m[0]);
+      if (i < 0) notFound("User not found");
+      const isLocked = body.isLocked === true;
+      db.users[i] = {
+        ...db.users[i],
+        isLocked,
+        status: isLocked ? "Locked" : "Active",
+      };
+      return ok(db.users[i]);
     }
   }
 

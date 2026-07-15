@@ -35,7 +35,8 @@ export const userService = {
   getProfile: () => apiClient.get("/api/users/profile"),
   updateProfile: (body) => apiClient.put("/api/users/profile", body),
   getAll: () => apiClient.get("/api/users"),
-  remove: (id) => apiClient.delete(`/api/users/${id}`),
+  setLocked: (id, isLocked) =>
+    apiClient.put(`/api/users/${id}/lock`, { isLocked }),
 };
 
 export const roleService = {
