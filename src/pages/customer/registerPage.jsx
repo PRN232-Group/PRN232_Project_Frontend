@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import "@fortawesome/fontawesome-free/css/all.min.css";
 import "../../styles/customer/authPage.css";
+import { notifySuccess, notifyError, notifyInfo, notifyWarn } from "../../application/services/notify";
 
 const RegisterPage = () => {
   const navigate = useNavigate();
@@ -82,7 +83,7 @@ const RegisterPage = () => {
 
       localStorage.setItem("user", JSON.stringify(mockUser));
 
-      alert("Register success!");
+      notifySuccess("Register success!");
 
       navigate("/login");
     } catch (err) {
@@ -216,19 +217,6 @@ const RegisterPage = () => {
                 </span>
               </div>
             </form>
-
-            {/* SOCIAL */}
-            <div className="login-socials">
-              <a href="#">
-                <i className="fa-brands fa-facebook-f"></i>
-              </a>
-              <a href="#">
-                <i className="fa-brands fa-instagram"></i>
-              </a>
-              <a href="#">
-                <i className="fa-brands fa-twitter"></i>
-              </a>
-            </div>
           </div>
         </div>
       </div>

@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { Bar, Doughnut, Line } from "react-chartjs-2";
 import {
   Chart as ChartJS,
@@ -7,17 +8,17 @@ import {
   LinearScale,
   PointElement,
   LineElement,
-  Title,
   Tooltip,
   Legend,
 } from "chart.js";
-
 import {
-  FaUsers,
-  FaBoxOpen,
-  FaShoppingCart,
-  FaDollarSign,
-} from "react-icons/fa";
+  analyticsService,
+  categoryService,
+  orderService,
+  productService,
+  userService,
+} from "../../application/services";
+import { formatVnd } from "../../domain/roles";
 
 ChartJS.register(
   BarElement,
@@ -26,223 +27,203 @@ ChartJS.register(
   LinearScale,
   PointElement,
   LineElement,
-  Title,
   Tooltip,
   Legend
 );
 
-const chartOptions = {
+const clay = "#b0784f";
+const clayDark = "#8a5b34";
+const chartOpts = {
   responsive: true,
   maintainAspectRatio: false,
+  plugins: { legend: { labels: { color: "#4a423b", font: { family: "Poppins" } } } },
 };
 
 const AdminDashboardPage = () => {
-  // TODO: Call API sau
-
-  const totalUsers = 0;
-  const totalProducts = 0;
-  const totalOrders = 0;
-  const totalRevenue = 0;
-
-  const ordersByMonth = {
-    labels: [
-      "Jan",
-      "Feb",
-      "Mar",
-      "Apr",
-      "May",
-      "Jun",
-      "Jul",
-    ],
+  const [totalUsers, setTotalUsers] = useState(0);
+  const [totalProducts, setTotalProducts] = useState(0);
+  const [totalOrders, setTotalOrders] = useState(0);
+  const [totalRevenue, setTotalRevenue] = useState(0);
+  const [ordersByMonth, setOrdersByMonth] = useState({
+    labels: ["T1", "T2", "T3", "T4", "T5", "T6", "T7"],
     datasets: [
       {
-        label: "Orders",
-        data: [],
-        borderColor: "#8B5E3C",
-        backgroundColor: "#8B5E3C33",
+        label: "Đơn hàng",
+        data: [0, 0, 0, 0, 0, 0, 0],
+        borderColor: clay,
+        backgroundColor: "rgba(176,120,79,0.2)",
         tension: 0.4,
       },
     ],
-  };
-
-  const categoryRatio = {
+  });
+  const [categoryRatio, setCategoryRatio] = useState({
     labels: [],
     datasets: [
       {
         data: [],
-        backgroundColor: [
-          "#8B5E3C",
-          "#C19A6B",
-          "#D8C3A5",
-          "#A67B5B",
-        ],
+        backgroundColor: [clay, clayDark, "#ddc0a1", "#c49a6c", "#5f7d55", "#efe9e1"],
       },
     ],
-  };
-
-  const orderStatus = {
+  });
+  const [orderStatus, setOrderStatus] = useState({
+    labels: [],
+    datasets: [{ data: [], backgroundColor: ["#d19a3f", clay, "#5f7d55", "#c8493c"] }],
+  });
+  const [productSales, setProductSales] = useState({
     labels: [],
     datasets: [
       {
+        label: "Đã bán",
         data: [],
-        backgroundColor: [
-          "#4CAF50",
-          "#FFC107",
-          "#2196F3",
-          "#F44336",
-        ],
-      },
-    ],
-  };
-
-  const productSales = {
-    labels: [],
-    datasets: [
-      {
-        label: "Products Sold",
-        data: [],
-        backgroundColor: "#8B5E3C",
+        backgroundColor: clay,
         borderRadius: 8,
       },
     ],
-  };
+  });
+
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const [dash, users, products, orders, categories, best] =
+          await Promise.all([
+            analyticsService.getManagerDashboard(),
+            userService.getAll(),
+            productService.getAll(),
+            orderService.getAll(),
+            categoryService.getAll(),
+            analyticsService.getBestSelling(),
+          ]);
+        const d = dash.data || {};
+        const userList = users.data || [];
+        const productList = products.data || [];
+        const orderList = orders.data || [];
+        const catList = categories.data || [];
+        const bestList = best.data || [];
+
+        setTotalUsers(d.totalUsers ?? userList.length);
+        setTotalProducts(d.totalProducts ?? productList.length);
+        setTotalOrders(d.totalOrders ?? orderList.length);
+        setTotalRevenue(
+          d.totalRevenue ??
+            orderList.reduce((s, o) => s + (o.totalPrice || 0), 0)
+        );
+
+        const monthCounts = Array(7).fill(0);
+        orderList.forEach((o) => {
+          const m = new Date(o.createdAt).getMonth();
+          if (m >= 0 && m < 7) monthCounts[m] += 1;
+        });
+        setOrdersByMonth((prev) => ({
+          ...prev,
+          datasets: [{ ...prev.datasets[0], data: monthCounts }],
+        }));
+
+        setCategoryRatio({
+          labels: catList.map((c) => c.name),
+          datasets: [
+            {
+              data: catList.map(
+                (c) => productList.filter((p) => p.categoryId === c.id).length
+              ),
+              backgroundColor: [
+                clay,
+                clayDark,
+                "#ddc0a1",
+                "#c49a6c",
+                "#5f7d55",
+                "#efe9e1",
+              ],
+            },
+          ],
+        });
+
+        const statusMap = {};
+        orderList.forEach((o) => {
+          statusMap[o.status] = (statusMap[o.status] || 0) + 1;
+        });
+        setOrderStatus({
+          labels: Object.keys(statusMap),
+          datasets: [
+            {
+              data: Object.values(statusMap),
+              backgroundColor: ["#d19a3f", clay, "#5f7d55", "#c8493c"],
+            },
+          ],
+        });
+
+        setProductSales({
+          labels: bestList.map((p) => p.name),
+          datasets: [
+            {
+              label: "Đã bán",
+              data: bestList.map((p) => p.soldQuantity || p.sold || 0),
+              backgroundColor: clay,
+              borderRadius: 8,
+            },
+          ],
+        });
+      } catch (err) {
+        console.error(err);
+      }
+    };
+    load();
+  }, []);
 
   return (
-    <>
-      {/* Overview */}
+    <div className="staff-page">
+      <h2>Tổng quan Admin</h2>
+      <p className="staff-page-sub">
+        Người dùng, catalog và đơn hàng — cùng palette Interior Studio.
+      </p>
 
-      <div className="mb-6">
-
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-
-          <div className="bg-white rounded-2xl shadow p-6 flex flex-col items-center">
-
-            <FaUsers className="text-4xl text-[#8B5E3C] mb-3" />
-
-            <div className="text-3xl font-bold">
-              {totalUsers}
-            </div>
-
-            <div className="text-gray-500">
-              Total Users
-            </div>
-
-          </div>
-
-          <div className="bg-white rounded-2xl shadow p-6 flex flex-col items-center">
-
-            <FaBoxOpen className="text-4xl text-[#C19A6B] mb-3" />
-
-            <div className="text-3xl font-bold">
-              {totalProducts}
-            </div>
-
-            <div className="text-gray-500">
-              Total Products
-            </div>
-
-          </div>
-
-          <div className="bg-white rounded-2xl shadow p-6 flex flex-col items-center">
-
-            <FaShoppingCart className="text-4xl text-[#A67B5B] mb-3" />
-
-            <div className="text-3xl font-bold">
-              {totalOrders}
-            </div>
-
-            <div className="text-gray-500">
-              Total Orders
-            </div>
-
-          </div>
-
-          <div className="bg-white rounded-2xl shadow p-6 flex flex-col items-center">
-
-            <FaDollarSign className="text-4xl text-green-600 mb-3" />
-
-            <div className="text-3xl font-bold">
-              ${totalRevenue}
-            </div>
-
-            <div className="text-gray-500">
-              Revenue
-            </div>
-
-          </div>
-
+      <div className="staff-kpi-grid">
+        <div className="staff-kpi">
+          <span>Người dùng</span>
+          <strong>{totalUsers}</strong>
         </div>
-
+        <div className="staff-kpi">
+          <span>Sản phẩm</span>
+          <strong>{totalProducts}</strong>
+        </div>
+        <div className="staff-kpi">
+          <span>Đơn hàng</span>
+          <strong>{totalOrders}</strong>
+        </div>
+        <div className="staff-kpi">
+          <span>Doanh thu</span>
+          <strong className="is-clay">{formatVnd(totalRevenue)}</strong>
+        </div>
       </div>
 
-      {/* Charts */}
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
-
-        <div className="bg-white rounded-2xl shadow p-5 lg:col-span-2 h-[330px]">
-
-          <h2 className="font-bold text-xl mb-3">
-            Orders by Month
-          </h2>
-
-          <div className="h-[250px]">
-
-            <Line
-              data={ordersByMonth}
-              options={chartOptions}
-            />
-
+      <div className="staff-split" style={{ marginBottom: 16 }}>
+        <div className="staff-chart-card">
+          <h3>Đơn theo tháng</h3>
+          <div className="chart-wrap">
+            <Line data={ordersByMonth} options={chartOpts} />
           </div>
-
         </div>
-
-        <div className="bg-white rounded-2xl shadow p-5 h-[330px]">
-
-          <h2 className="font-bold text-xl mb-3">
-            Product Categories
-          </h2>
-
-          <div className="h-[250px] flex items-center justify-center">
-
-            <Doughnut data={categoryRatio} />
-
+        <div className="staff-chart-card">
+          <h3>Tỷ lệ danh mục</h3>
+          <div className="chart-wrap">
+            <Doughnut data={categoryRatio} options={chartOpts} />
           </div>
-
         </div>
-
-        <div className="bg-white rounded-2xl shadow p-5 h-[330px]">
-
-          <h2 className="font-bold text-xl mb-3">
-            Order Status
-          </h2>
-
-          <div className="h-[250px] flex items-center justify-center">
-
-            <Doughnut data={orderStatus} />
-
-          </div>
-
-        </div>
-
-        <div className="bg-white rounded-2xl shadow p-5 lg:col-span-2 h-[330px]">
-
-          <h2 className="font-bold text-xl mb-3">
-            Product Sales
-          </h2>
-
-          <div className="h-[250px]">
-
-            <Bar
-              data={productSales}
-              options={chartOptions}
-            />
-
-          </div>
-
-        </div>
-
       </div>
-    </>
+      <div className="staff-split">
+        <div className="staff-chart-card">
+          <h3>Trạng thái đơn</h3>
+          <div className="chart-wrap">
+            <Doughnut data={orderStatus} options={chartOpts} />
+          </div>
+        </div>
+        <div className="staff-chart-card">
+          <h3>Bán chạy</h3>
+          <div className="chart-wrap">
+            <Bar data={productSales} options={chartOpts} />
+          </div>
+        </div>
+      </div>
+    </div>
   );
 };
 

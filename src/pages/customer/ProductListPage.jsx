@@ -1,25 +1,29 @@
 import React, { useEffect, useState } from "react";
-import axios from "axios";
-import { useNavigate } from "react-router-dom";
-import "../../styles/customer/productListPage.css";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import { productService, cartService } from "../../application/services";
+import { addLocalCartItem } from "../../utils/cartLocal";
+import { notifySuccess, notifyError } from "../../application/services/notify";
 
 const ProductListPage = () => {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  const idFilter = (searchParams.get("ids") || "")
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean)
+    .map(Number)
+    .filter((n) => !Number.isNaN(n));
 
   const [products, setProducts] = useState([]);
   const [filtered, setFiltered] = useState([]);
-
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState("All");
-
   const [loading, setLoading] = useState(true);
-  const [toast, setToast] = useState("");
-
-  // pagination
   const [currentPage, setCurrentPage] = useState(1);
   const pageSize = 8;
 
-  const categories = ["All", "Sofa", "Table", "Chair", "Bed"];
+  const categories = ["All", "Sofa", "Bàn", "Ghế", "Kệ", "Đèn", "Giường"];
 
   useEffect(() => {
     fetchProducts();
@@ -27,52 +31,22 @@ const ProductListPage = () => {
 
   useEffect(() => {
     filterData();
-  }, [search, category, products]);
+  }, [search, category, products, searchParams]);
 
   const fetchProducts = async () => {
     try {
       setLoading(true);
-      setError("");
-
-      const res = await axios.get(
-        "https://localhost:5001/api/products"
-      );
-
-      setProducts(res.data || []);
-      setFiltered(res.data || []);
+      const res = await productService.getAll();
+      const list = (res.data || []).map((p) => ({
+        ...p,
+        image: p.image || p.imageUrl,
+        category: p.categoryName || p.category || "",
+      }));
+      setProducts(list);
     } catch (err) {
       console.error(err);
-
-      // fallback demo data
-      const demo = [
-        {
-          id: 1,
-          name: "Modern Sofa",
-          price: 5000000,
-          category: "Sofa",
-          image:
-            "https://images.unsplash.com/photo-1505693416388-ac5ce068fe85",
-        },
-        {
-          id: 2,
-          name: "Wood Table",
-          price: 2000000,
-          category: "Table",
-          image:
-            "https://images.unsplash.com/photo-1524758631624-e2822e304c36",
-        },
-        {
-          id: 3,
-          name: "Office Chair",
-          price: 1500000,
-          category: "Chair",
-          image:
-            "https://images.unsplash.com/photo-1503602642458-232111445657",
-        },
-      ];
-
-      setProducts(demo);
-      setFiltered(demo);
+      setProducts([]);
+      notifyError("Không tải được sản phẩm");
     } finally {
       setLoading(false);
     }
@@ -80,94 +54,79 @@ const ProductListPage = () => {
 
   const filterData = () => {
     let data = [...products];
-
-    if (category !== "All") {
-      data = data.filter((p) => p.category === category);
+    if (idFilter.length > 0) {
+      data = data.filter((p) => idFilter.includes(Number(p.id)));
     }
-
-    if (search) {
-      data = data.filter((p) =>
-        p.name.toLowerCase().includes(search.toLowerCase())
+    if (category !== "All") {
+      data = data.filter(
+        (p) => (p.category || "").includes(category) || p.category === category
       );
     }
-
+    if (search) {
+      const q = search.toLowerCase();
+      data = data.filter((p) => (p.name || "").toLowerCase().includes(q));
+    }
     setFiltered(data);
     setCurrentPage(1);
   };
 
+  const clearIdFilter = () => {
+    const next = new URLSearchParams(searchParams);
+    next.delete("ids");
+    setSearchParams(next);
+  };
+
   const addToCart = async (product) => {
-    // optimistic local cart so the flow works without a backend
-    try {
-      const cart = JSON.parse(localStorage.getItem("cart") || "[]");
-      const existing = cart.find((i) => i.id === product.id);
-      if (existing) {
-        existing.quantity += 1;
-      } else {
-        cart.push({ ...product, quantity: 1 });
-      }
-      localStorage.setItem("cart", JSON.stringify(cart));
-
-      axios
-        .post("https://localhost:5001/api/cart", {
-          productId: product.id,
-          quantity: 1,
-        })
-        .catch(() => {});
-
-      setToast(`Đã thêm "${product.name}" vào giỏ hàng`);
-      setTimeout(() => setToast(""), 2200);
-    } catch (err) {
-      console.error(err);
-    }
+    addLocalCartItem(product, 1);
+    cartService
+      .add({ productId: product.id, quantity: 1 })
+      .catch(() => {});
+    notifySuccess(`Đã thêm "${product.name}" vào giỏ`);
   };
 
-  // pagination
-  const totalPages = Math.ceil(filtered.length / pageSize);
-
+  const totalPages = Math.ceil(filtered.length / pageSize) || 1;
   const startIndex = (currentPage - 1) * pageSize;
-  const currentProducts = filtered.slice(
-    startIndex,
-    startIndex + pageSize
-  );
-
-  const changePage = (page) => {
-    if (page >= 1 && page <= totalPages) {
-      setCurrentPage(page);
-    }
-  };
+  const currentProducts = filtered.slice(startIndex, startIndex + pageSize);
 
   return (
-    <div className="product-list-page">
-      <h2>Products</h2>
+    <div className="product-list-page page">
+      <h2>Sản phẩm</h2>
 
-      {/* TOOLBAR */}
+      {idFilter.length > 0 && (
+        <div className="product-design-filter">
+          <span>
+            Đang lọc {idFilter.length} sản phẩm từ concept thiết kế
+          </span>
+          <button type="button" className="btn-ghost" onClick={clearIdFilter}>
+            Xóa bộ lọc
+          </button>
+        </div>
+      )}
+
       <div className="toolbar">
         <input
           type="text"
-          placeholder="Search products..."
+          placeholder="Tìm sản phẩm..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
         />
-
         <select
           value={category}
           onChange={(e) => setCategory(e.target.value)}
         >
           {categories.map((c) => (
             <option key={c} value={c}>
-              {c}
+              {c === "All" ? "Tất cả" : c}
             </option>
           ))}
         </select>
-
-        <button onClick={fetchProducts}>Reload</button>
+        <button type="button" onClick={fetchProducts}>
+          Tải lại
+        </button>
       </div>
 
-      {/* CONTENT */}
-      {loading && <p>Loading products...</p>}
-      {toast && <div className="toast-inline">{toast}</div>}
+      {loading && <p>Đang tải sản phẩm...</p>}
 
-      {/* GRID */}
       <div className="grid">
         {!loading &&
           currentProducts.map((p) => (
@@ -176,45 +135,53 @@ const ProductListPage = () => {
                 src={p.image}
                 alt={p.name}
                 onClick={() => navigate(`/products/${p.id}`)}
+                onError={(e) => {
+                  e.currentTarget.src =
+                    "https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=600&q=60";
+                }}
               />
-
               <h3>{p.name}</h3>
-
               <p className="price">
-                {p.price?.toLocaleString()} đ
+                {Number(p.price || 0).toLocaleString("vi-VN")} ₫
               </p>
-
               <div className="actions">
-                <button
-                  onClick={() => addToCart(p)}
-                >
-                  Add to Cart
+                <button type="button" onClick={() => addToCart(p)}>
+                  Thêm giỏ
                 </button>
-
                 <button
-                  onClick={() =>
-                    navigate(`/products/${p.id}`)
-                  }
+                  type="button"
+                  onClick={() => navigate(`/products/${p.id}`)}
                 >
-                  View
+                  Xem
                 </button>
               </div>
             </div>
           ))}
       </div>
 
-      {/* PAGINATION */}
+      {!loading && currentProducts.length === 0 && (
+        <p style={{ textAlign: "center", color: "var(--muted)" }}>
+          Không tìm thấy sản phẩm
+        </p>
+      )}
+
       <div className="pagination">
-        <button onClick={() => changePage(currentPage - 1)}>
-          Prev
+        <button
+          type="button"
+          disabled={currentPage <= 1}
+          onClick={() => setCurrentPage((p) => p - 1)}
+        >
+          Trước
         </button>
-
         <span>
-          Page {currentPage} / {totalPages || 1}
+          Trang {currentPage} / {totalPages}
         </span>
-
-        <button onClick={() => changePage(currentPage + 1)}>
-          Next
+        <button
+          type="button"
+          disabled={currentPage >= totalPages}
+          onClick={() => setCurrentPage((p) => p + 1)}
+        >
+          Sau
         </button>
       </div>
     </div>

@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
-import axios from "axios";
 import { useNavigate } from "react-router-dom";
-import "../../styles/customer/productSearchPage.css";
+import { productService, cartService } from "../../application/services";
+import { notifySuccess, notifyError, notifyInfo, notifyWarn } from "../../application/services/notify";
 
 const ProductSearchPage = () => {
   const navigate = useNavigate();
@@ -32,9 +32,7 @@ const ProductSearchPage = () => {
       setLoading(true);
       setError("");
 
-      const res = await axios.get(
-        `https://localhost:5001/api/products/search?keyword=${keyword}`
-      );
+      const res = await productService.search(keyword);
 
       setProducts(res.data || []);
       setCurrentPage(1);
@@ -58,15 +56,15 @@ const ProductSearchPage = () => {
 
   const addToCart = async (product) => {
     try {
-      await axios.post("https://localhost:5001/api/cart", {
+      await cartService.add({
         productId: product.id,
         quantity: 1,
       });
 
-      alert("Đã thêm vào giỏ hàng!");
+      notifySuccess("Đã thêm vào giỏ hàng!");
     } catch (err) {
       console.error(err);
-      alert("Thêm vào giỏ hàng thất bại");
+      notifyError("Thêm vào giỏ hàng thất bại");
     }
   };
 

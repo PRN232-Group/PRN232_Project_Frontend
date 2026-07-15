@@ -1,25 +1,17 @@
 import { useEffect, useRef, useState, useContext } from "react";
-import { useLocation, Link } from "react-router-dom";
+import { useLocation, Link, useNavigate } from "react-router-dom";
 import UserContext from "../contexts/UserContext";
+import { normalizeRole, ROLE_LABEL, ROLE_LANDING } from "../domain/roles";
+import { logout as logoutUseCase } from "../application/services/authService";
+import "../styles/site-header.css";
 
-/* Normalize any role casing (e.g. "User", "MANAGER") to a known key */
-const normalizeRole = (role) => {
-  const r = (role || "").toString().trim().toLowerCase();
-  if (["sales", "sale"].includes(r)) return "sales";
-  if (["production", "factory"].includes(r)) return "production";
-  if (["manager", "management"].includes(r)) return "manager";
-  if (["admin", "administrator"].includes(r)) return "admin";
-  return "customer";
-};
-
-/* Role-specific workspace links shown inside the user dropdown */
 const WORKSPACE = {
   customer: {
     title: "Tài khoản của tôi",
     links: [
       { label: "Giỏ hàng", href: "/cart" },
       { label: "Đơn hàng của tôi", href: "/orders" },
-      { label: "Tin nhắn", href: "/chat" },
+      { label: "Hỗ trợ / Tin nhắn", href: "/chat" },
     ],
   },
   sales: {
@@ -31,21 +23,13 @@ const WORKSPACE = {
       { label: "Chăm sóc khách", href: "/sales/chat" },
     ],
   },
-  production: {
-    title: "Khu vực Sản xuất",
-    links: [
-      { label: "Bảng điều khiển", href: "/production" },
-      { label: "Lệnh sản xuất", href: "/production/orders" },
-      { label: "Tiến độ", href: "/production/progress" },
-      { label: "Giao hàng", href: "/production/delivery" },
-    ],
-  },
   manager: {
     title: "Khu vực Quản lý",
     links: [
       { label: "Bảng điều khiển", href: "/manager" },
       { label: "Sản phẩm", href: "/manager/products" },
-      { label: "Đơn hàng", href: "/manager/orders" },
+      { label: "Concept thiết kế", href: "/manager/designs" },
+      { label: "Danh mục", href: "/manager/categories" },
       { label: "Doanh thu", href: "/manager/revenue" },
     ],
   },
@@ -54,31 +38,93 @@ const WORKSPACE = {
     links: [
       { label: "Bảng điều khiển", href: "/admin" },
       { label: "Người dùng", href: "/admin/users" },
-      { label: "Phân quyền", href: "/admin/roles" },
-      { label: "Nhật ký hệ thống", href: "/admin/system-logs" },
+      { label: "Đơn hàng (Sales)", href: "/sales/orders" },
+      { label: "Sản phẩm (QL)", href: "/manager/products" },
     ],
   },
 };
 
-const ROLE_LABEL = {
-  customer: "Khách hàng",
-  sales: "Nhân viên Kinh doanh",
-  production: "Nhân viên Sản xuất",
-  manager: "Quản lý",
-  admin: "Quản trị viên",
-};
+function IconBag({ className = "" }) {
+  return (
+    <svg
+      className={className}
+      width="18"
+      height="18"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+    >
+      <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z" />
+      <path d="M3 6h18" />
+      <path d="M16 10a4 4 0 0 1-8 0" />
+    </svg>
+  );
+}
+
+function IconMenu({ open }) {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden>
+      {open ? (
+        <path
+          d="M6 6l12 12M18 6L6 18"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+        />
+      ) : (
+        <path
+          d="M4 7h16M4 12h16M4 17h16"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+        />
+      )}
+    </svg>
+  );
+}
+
+function readCartCount() {
+  try {
+    const local = JSON.parse(localStorage.getItem("cart") || "[]");
+    if (Array.isArray(local) && local.length) {
+      return local.reduce((s, i) => s + (Number(i.quantity) || 1), 0);
+    }
+  } catch {
+    /* ignore */
+  }
+  return Number(localStorage.getItem("cartCount") || 0);
+}
 
 const Header = () => {
   const location = useLocation();
+  const navigate = useNavigate();
   const currentPath = location.pathname;
 
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
+  const [cartCount, setCartCount] = useState(0);
   const dropdownRef = useRef(null);
 
   const { user, setUser } = useContext(UserContext);
   const roleKey = user ? normalizeRole(user.role) : null;
+  const isCustomer = !user || roleKey === "customer";
   const workspace = roleKey ? WORKSPACE[roleKey] : null;
+  const workspaceHome = roleKey ? ROLE_LANDING[roleKey] || "/" : "/";
+
+  useEffect(() => {
+    const sync = () => setCartCount(readCartCount());
+    sync();
+    window.addEventListener("cart-updated", sync);
+    window.addEventListener("storage", sync);
+    return () => {
+      window.removeEventListener("cart-updated", sync);
+      window.removeEventListener("storage", sync);
+    };
+  }, []);
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -90,134 +136,115 @@ const Header = () => {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // close menus on route change
   useEffect(() => {
     setShowMobileMenu(false);
     setShowUserMenu(false);
   }, [currentPath]);
 
   const handleLogout = () => {
-    localStorage.removeItem("user");
+    logoutUseCase();
     setUser(null);
     window.location.href = "/";
   };
 
-  // Main nav stays clean: public links, plus quick shopping links for customers.
-  const publicMenu = [
-    { label: "Trang chủ", href: "/" },
-    { label: "Sản phẩm", href: "/products" },
-    { label: "Thiết kế 3D", href: "/design" },
-  ];
-  const customerExtra = [
-    { label: "Giỏ hàng", href: "/cart" },
-    { label: "Đơn hàng", href: "/orders" },
-  ];
-  const menuItems =
-    roleKey === "customer" ? [...publicMenu, ...customerExtra] : publicMenu;
+  const menuItems = isCustomer
+    ? [
+        { label: "Trang chủ", href: "/" },
+        { label: "Sản phẩm", href: "/products" },
+        { label: "Concept thiết kế", href: "/design" },
+        ...(user ? [{ label: "Đơn hàng", href: "/orders" }] : []),
+      ]
+    : [
+        { label: "Trang chủ", href: "/" },
+        { label: "Khu vực làm việc", href: workspaceHome },
+        ...(workspace?.links.slice(0, 2) || []),
+      ];
 
-  const displayName = user?.name || (user?.email ? user.email.split("@")[0] : "Tài khoản");
+  const displayName =
+    user?.name || (user?.email ? user.email.split("@")[0] : "Tài khoản");
   const initial = (displayName || "U")[0].toUpperCase();
 
-  const linkClass = (href) =>
-    `whitespace-nowrap text-sm font-medium transition-colors duration-200 ${
-      currentPath === href
-        ? "text-[var(--clay-dark)]"
-        : "text-[var(--body)] hover:text-[var(--clay)]"
-    }`;
+  const isActive = (href) =>
+    currentPath === href ||
+    (href !== "/" && currentPath.startsWith(href + "/"));
 
   return (
-    <header className="sticky top-0 z-50 border-b border-[var(--line)] bg-[#f7f4efcc] backdrop-blur-md">
-      <nav className="mx-auto grid max-w-7xl grid-cols-[auto_1fr_auto] items-center gap-4 px-4 py-3 md:px-6">
-        {/* LOGO */}
-        <Link to="/" className="flex items-center gap-3">
-          <span className="grid h-10 w-10 place-items-center rounded-xl bg-gradient-to-br from-[var(--clay)] to-[var(--clay-dark)] font-serif text-sm font-bold text-white shadow-[var(--shadow-clay)]">
-            IS
-          </span>
-          <span className="hidden font-serif text-xl font-semibold tracking-tight text-[var(--ink)] sm:inline">
-            Interior Studio
-          </span>
+    <header className="site-header">
+      <div className="site-header-inner">
+        <Link to="/" className="site-brand">
+          <span className="site-brand-mark">IS</span>
+          <span className="site-brand-name">Interior Studio</span>
         </Link>
 
-        {/* DESKTOP MENU (centered) */}
-        <ul className="hidden items-center justify-center gap-8 md:flex">
+        <nav className="site-nav-desktop" aria-label="Menu chính">
           {menuItems.map((item) => (
-            <li key={item.href} className="flex items-center">
-              <Link to={item.href} className={linkClass(item.href)}>
-                {item.label}
-              </Link>
-            </li>
+            <Link
+              key={item.href}
+              to={item.href}
+              className={`site-nav-link${isActive(item.href) ? " is-active" : ""}`}
+            >
+              {item.label}
+            </Link>
           ))}
-        </ul>
+        </nav>
 
-        {/* RIGHT */}
-        <div className="flex items-center justify-end gap-3">
+        <div className="site-header-actions">
+          {isCustomer && (
+            <button
+              type="button"
+              className="site-icon-btn"
+              onClick={() => navigate("/cart")}
+              aria-label="Giỏ hàng"
+              title="Giỏ hàng"
+            >
+              <IconBag />
+              {cartCount > 0 && (
+                <span className="site-cart-badge">
+                  {cartCount > 99 ? "99+" : cartCount}
+                </span>
+              )}
+            </button>
+          )}
+
           {user ? (
-            <div ref={dropdownRef} className="relative">
+            <div className="site-user" ref={dropdownRef}>
               <button
+                type="button"
+                className="site-user-btn"
                 onClick={() => setShowUserMenu((p) => !p)}
-                className="flex items-center gap-2 rounded-full border border-[var(--line)] bg-white py-1.5 pl-1.5 pr-3 text-sm text-[var(--ink)] shadow-[var(--shadow-sm)] transition hover:border-[var(--clay)]"
-                aria-haspopup="true"
                 aria-expanded={showUserMenu}
+                aria-haspopup="true"
               >
-                <span className="grid h-8 w-8 place-items-center rounded-full bg-gradient-to-br from-[var(--clay)] to-[var(--clay-dark)] text-xs font-bold text-white">
-                  {initial}
+                <span className="site-avatar">{initial}</span>
+                <span className="site-user-name">{displayName}</span>
+                <span className="site-chevron" aria-hidden>
+                  ▾
                 </span>
-                <span className="hidden max-w-[120px] truncate font-medium sm:inline">
-                  {displayName}
-                </span>
-                <i className="fa-solid fa-chevron-down text-[10px] text-[var(--muted)]" />
               </button>
 
               {showUserMenu && (
-                <div className="anim-fade-in absolute right-0 mt-3 w-64 overflow-hidden rounded-2xl border border-[var(--line)] bg-white shadow-[var(--shadow-md)]">
-                  {/* account summary */}
-                  <div className="flex items-center gap-3 border-b border-[var(--line)] bg-[var(--clay-tint)] px-4 py-3">
-                    <span className="grid h-10 w-10 place-items-center rounded-full bg-gradient-to-br from-[var(--clay)] to-[var(--clay-dark)] text-sm font-bold text-white">
-                      {initial}
-                    </span>
-                    <div className="min-w-0">
-                      <div className="truncate text-sm font-semibold text-[var(--ink)]">
-                        {displayName}
-                      </div>
-                      <div className="truncate text-xs text-[var(--body)]">
-                        {user?.email}
-                      </div>
-                      <span className="mt-0.5 inline-block rounded-full bg-white px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[var(--clay-dark)]">
-                        {ROLE_LABEL[roleKey]}
-                      </span>
+                <div className="site-dropdown">
+                  <div className="site-dropdown-head">
+                    <span className="site-avatar lg">{initial}</span>
+                    <div className="site-dropdown-meta">
+                      <strong>{displayName}</strong>
+                      <span>{user?.email}</span>
+                      <em>{ROLE_LABEL[roleKey]}</em>
                     </div>
                   </div>
-
-                  {/* workspace / role links */}
                   {workspace && (
-                    <div className="py-1">
-                      <div className="px-4 pb-1 pt-2 text-[11px] font-semibold uppercase tracking-wide text-[var(--muted)]">
-                        {workspace.title}
-                      </div>
+                    <div className="site-dropdown-section">
+                      <p>{workspace.title}</p>
                       {workspace.links.map((l) => (
-                        <Link
-                          key={l.href}
-                          to={l.href}
-                          className="block px-4 py-2 text-sm text-[var(--body)] transition hover:bg-[var(--clay-tint)] hover:text-[var(--clay-dark)]"
-                        >
+                        <Link key={l.href} to={l.href}>
                           {l.label}
                         </Link>
                       ))}
                     </div>
                   )}
-
-                  {/* profile + logout */}
-                  <div className="border-t border-[var(--line)] py-1">
-                    <Link
-                      to="/profile"
-                      className="block px-4 py-2 text-sm text-[var(--body)] transition hover:bg-[var(--clay-tint)]"
-                    >
-                      Hồ sơ cá nhân
-                    </Link>
-                    <button
-                      onClick={handleLogout}
-                      className="w-full px-4 py-2 text-left text-sm font-medium text-[var(--danger)] transition hover:bg-[#fbeceb]"
-                    >
+                  <div className="site-dropdown-foot">
+                    <Link to="/profile">Hồ sơ cá nhân</Link>
+                    <button type="button" onClick={handleLogout}>
                       Đăng xuất
                     </button>
                   </div>
@@ -225,128 +252,70 @@ const Header = () => {
               )}
             </div>
           ) : (
-            <div className="hidden gap-2 sm:flex">
-              <Link
-                to="/login"
-                className="rounded-full bg-[var(--clay)] px-5 py-2 text-sm font-medium text-white shadow-[var(--shadow-clay)] transition hover:-translate-y-0.5 hover:bg-[var(--clay-dark)]"
-              >
+            <div className="site-auth-desktop">
+              <Link to="/login" className="site-btn site-btn-primary">
                 Đăng nhập
               </Link>
-              <Link
-                to="/register"
-                className="rounded-full border border-[var(--line)] bg-white px-5 py-2 text-sm font-medium text-[var(--body)] transition hover:border-[var(--clay)] hover:text-[var(--clay)]"
-              >
+              <Link to="/register" className="site-btn site-btn-ghost">
                 Đăng ký
               </Link>
             </div>
           )}
 
-          {/* MOBILE TOGGLE */}
-          <div className="md:hidden">
           <button
+            type="button"
+            className="site-icon-btn site-burger"
             onClick={() => setShowMobileMenu((p) => !p)}
-            className="grid h-10 w-10 place-items-center rounded-lg border border-[var(--line)] bg-white text-[var(--ink)] transition hover:border-[var(--clay)]"
             aria-label="Menu"
             aria-expanded={showMobileMenu}
           >
-            <span className="relative block h-4 w-5">
-              <span
-                className={`absolute left-0 block h-0.5 w-5 bg-current transition-all duration-300 ${
-                  showMobileMenu ? "top-1.5 rotate-45" : "top-0"
-                }`}
-              />
-              <span
-                className={`absolute left-0 top-1.5 block h-0.5 w-5 bg-current transition-all duration-200 ${
-                  showMobileMenu ? "opacity-0" : "opacity-100"
-                }`}
-              />
-              <span
-                className={`absolute left-0 block h-0.5 w-5 bg-current transition-all duration-300 ${
-                  showMobileMenu ? "top-1.5 -rotate-45" : "top-3"
-                }`}
-              />
-            </span>
+            <IconMenu open={showMobileMenu} />
           </button>
-          </div>
         </div>
-      </nav>
+      </div>
 
-      {/* MOBILE MENU PANEL */}
       <div
-        className={`overflow-hidden border-t border-[var(--line)] bg-[#f7f4ef] transition-[max-height,opacity] duration-300 md:hidden ${
-          showMobileMenu ? "max-h-[640px] opacity-100" : "max-h-0 opacity-0"
-        }`}
+        className={`site-mobile-panel${showMobileMenu ? " is-open" : ""}`}
+        id="site-mobile-nav"
       >
-        <ul className="flex flex-col gap-1 px-4 py-3">
-          {menuItems.map((item) => (
-            <li key={item.href}>
-              <Link
-                to={item.href}
-                className={`block rounded-lg px-3 py-2.5 text-sm font-medium transition ${
-                  currentPath === item.href
-                    ? "bg-[var(--clay-tint)] text-[var(--clay-dark)]"
-                    : "text-[var(--body)] hover:bg-[var(--clay-tint)]"
-                }`}
-              >
-                {item.label}
-              </Link>
-            </li>
-          ))}
+        {menuItems.map((item) => (
+          <Link
+            key={item.href}
+            to={item.href}
+            className={isActive(item.href) ? "is-active" : undefined}
+          >
+            {item.label}
+          </Link>
+        ))}
 
-          {/* role workspace links on mobile */}
-          {workspace && (
-            <li className="mt-2 border-t border-[var(--line)] pt-2">
-              <div className="px-3 pb-1 text-[11px] font-semibold uppercase tracking-wide text-[var(--muted)]">
-                {workspace.title}
-              </div>
-              {workspace.links.map((l) => (
-                <Link
-                  key={l.href}
-                  to={l.href}
-                  className={`block rounded-lg px-3 py-2.5 text-sm font-medium transition ${
-                    currentPath === l.href
-                      ? "bg-[var(--clay-tint)] text-[var(--clay-dark)]"
-                      : "text-[var(--body)] hover:bg-[var(--clay-tint)]"
-                  }`}
-                >
-                  {l.label}
-                </Link>
-              ))}
-            </li>
-          )}
+        {workspace && (
+          <>
+            <p className="site-mobile-label">{workspace.title}</p>
+            {workspace.links.map((l) => (
+              <Link key={l.href} to={l.href}>
+                {l.label}
+              </Link>
+            ))}
+          </>
+        )}
 
-          {user ? (
-            <li className="mt-2 border-t border-[var(--line)] pt-2">
-              <Link
-                to="/profile"
-                className="block rounded-lg px-3 py-2.5 text-sm font-medium text-[var(--body)] transition hover:bg-[var(--clay-tint)]"
-              >
-                Hồ sơ cá nhân
-              </Link>
-              <button
-                onClick={handleLogout}
-                className="w-full rounded-lg px-3 py-2.5 text-left text-sm font-medium text-[var(--danger)] transition hover:bg-[#fbeceb]"
-              >
-                Đăng xuất
-              </button>
-            </li>
-          ) : (
-            <li className="mt-2 flex gap-2 border-t border-[var(--line)] pt-3">
-              <Link
-                to="/login"
-                className="flex-1 rounded-full bg-[var(--clay)] px-4 py-2 text-center text-sm font-medium text-white"
-              >
-                Đăng nhập
-              </Link>
-              <Link
-                to="/register"
-                className="flex-1 rounded-full border border-[var(--line)] bg-white px-4 py-2 text-center text-sm font-medium text-[var(--body)]"
-              >
-                Đăng ký
-              </Link>
-            </li>
-          )}
-        </ul>
+        {user ? (
+          <>
+            <Link to="/profile">Hồ sơ cá nhân</Link>
+            <button type="button" className="site-mobile-logout" onClick={handleLogout}>
+              Đăng xuất
+            </button>
+          </>
+        ) : (
+          <div className="site-auth-mobile">
+            <Link to="/login" className="site-btn site-btn-primary">
+              Đăng nhập
+            </Link>
+            <Link to="/register" className="site-btn site-btn-ghost">
+              Đăng ký
+            </Link>
+          </div>
+        )}
       </div>
     </header>
   );

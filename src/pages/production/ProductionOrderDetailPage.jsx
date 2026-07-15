@@ -1,31 +1,42 @@
-import React, { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
-import axios from "axios";
-import "../../styles/production/productionOrderDetailPage.css";
+﻿import React, { useEffect, useState } from "react";
+import { Link, useParams } from "react-router-dom";
+import { productionService } from "../../application/services";
+
+const STATUS_OPTIONS = [
+  "Queued",
+  "InProgress",
+  "Done",
+  "Blocked",
+];
+
+const STATUS_LABEL = {
+  Queued: "Chờ xếp hàng",
+  InProgress: "Đang sản xuất",
+  Done: "Hoàn tất",
+  Blocked: "Tạm dừng",
+};
 
 const ProductionOrderDetailPage = () => {
-  const { orderId } = useParams();
-
+  const { id } = useParams();
   const [order, setOrder] = useState(null);
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
+  const [error, setError] = useState("");
 
   useEffect(() => {
     fetchOrderDetail();
-  }, [orderId]);
+  }, [id]);
 
   const fetchOrderDetail = async () => {
     try {
       setLoading(true);
-
-      // TODO: đổi API backend
-      const res = await axios.get(
-        `http://localhost:5000/api/production/orders/${orderId}`
-      );
-
+      setError("");
+      const res = await productionService.getOrder(id);
       setOrder(res.data || null);
-    } catch (error) {
-      console.error("Error fetching order detail:", error);
+    } catch (err) {
+      console.error(err);
+      setError("Không thể tải chi tiết lệnh");
+      setOrder(null);
     } finally {
       setLoading(false);
     }
@@ -34,99 +45,115 @@ const ProductionOrderDetailPage = () => {
   const updateStatus = async (newStatus) => {
     try {
       setUpdating(true);
-
-      await axios.put(
-        `http://localhost:5000/api/production/orders/${orderId}/status`,
-        {
-          status: newStatus,
-        }
-      );
-
-      setOrder((prev) => ({
-        ...prev,
-        status: newStatus,
-      }));
-    } catch (error) {
-      console.error("Error updating status:", error);
+      await productionService.updateStatus(id, newStatus);
+      setOrder((prev) => (prev ? { ...prev, status: newStatus } : prev));
+    } catch (err) {
+      console.error(err);
+      setError("Cập nhật trạng thái thất bại");
     } finally {
       setUpdating(false);
     }
   };
 
   if (loading) {
-    return <div className="order-detail-loading">Loading order...</div>;
+    return <div className="page">Đang tải lệnh sản xuất...</div>;
   }
 
   if (!order) {
-    return <div className="order-detail-empty">Order not found</div>;
+    return (
+      <div className="page">
+        <p className="error">{error || "Không tìm thấy lệnh sản xuất"}</p>
+        <Link to="/production/orders">← Quay lại danh sách</Link>
+      </div>
+    );
   }
 
   return (
-    <div className="production-order-detail">
-      <h2>Production Order Detail</h2>
-
-      {/* ORDER INFO */}
-      <div className="order-info">
-        <div><b>Order ID:</b> {order.id}</div>
-        <div><b>Customer:</b> {order.customerName}</div>
-        <div><b>Address:</b> {order.address}</div>
-        <div>
-          <b>Status:</b>{" "}
-          <span className={`status ${order.status}`}>
-            {order.status}
-          </span>
-        </div>
-        <div><b>Created Date:</b> {order.createdDate}</div>
+    <div className="production-order-detail page">
+      <div className="toolbar">
+        <h2 style={{ margin: 0, flex: 1 }}>Chi tiết lệnh #{order.id}</h2>
+        <Link to="/production/orders" className="btn-ghost">
+          ← Danh sách
+        </Link>
       </div>
 
-      {/* STATUS UPDATE */}
-      <div className="status-update">
-        <label>Update Status:</label>
+      {error && <p className="error">{error}</p>}
 
+      <div className="info-box" style={{ marginTop: 16 }}>
+        <p>
+          <b>Đơn hàng:</b> #{order.orderId ?? order.id}
+        </p>
+        <p>
+          <b>Khách hàng:</b> {order.customerName || "—"}
+        </p>
+        <p>
+          <b>Địa chỉ:</b> {order.address || order.shippingAddress || "—"}
+        </p>
+        <p>
+          <b>Tiến độ:</b> {order.progressPercent ?? 0}%
+        </p>
+        <p>
+          <b>Trạng thái:</b>{" "}
+          <span className={`status ${(order.status || "").toLowerCase()}`}>
+            {STATUS_LABEL[order.status] || order.status}
+          </span>
+        </p>
+        <p>
+          <b>Ngày tạo:</b>{" "}
+          {order.createdAt || order.createdDate
+            ? new Date(order.createdAt || order.createdDate).toLocaleString(
+                "vi-VN"
+              )
+            : "—"}
+        </p>
+      </div>
+
+      <div className="status-update toolbar" style={{ marginTop: 20 }}>
+        <label htmlFor="prod-status">Cập nhật trạng thái</label>
         <select
+          id="prod-status"
           value={order.status}
           disabled={updating}
           onChange={(e) => updateStatus(e.target.value)}
         >
-          <option value="PENDING">PENDING</option>
-          <option value="PREPARING">PREPARING</option>
-          <option value="PACKING">PACKING</option>
-          <option value="SHIPPING">SHIPPING</option>
-          <option value="DELIVERED">DELIVERED</option>
-          <option value="CANCELLED">CANCELLED</option>
+          {STATUS_OPTIONS.map((s) => (
+            <option key={s} value={s}>
+              {STATUS_LABEL[s]}
+            </option>
+          ))}
         </select>
       </div>
 
-      {/* PRODUCT LIST */}
-      <div className="order-items">
-        <h3>Products</h3>
-
-        {order.items && order.items.length > 0 ? (
-          <table>
+      <h3 style={{ marginTop: 28 }}>Sản phẩm</h3>
+      <div style={{ overflowX: "auto" }}>
+        {(order.items || []).length > 0 ? (
+          <table className="data-table">
             <thead>
               <tr>
-                <th>Product</th>
-                <th>Quantity</th>
-                <th>Price</th>
-                <th>Total</th>
+                <th>Sản phẩm</th>
+                <th>SL</th>
+                <th>Đơn giá</th>
+                <th>Thành tiền</th>
               </tr>
             </thead>
-
             <tbody>
               {order.items.map((item, index) => (
                 <tr key={index}>
                   <td>{item.productName}</td>
                   <td>{item.quantity}</td>
-                  <td>{item.price?.toLocaleString()} VND</td>
+                  <td>{Number(item.price || 0).toLocaleString("vi-VN")} ₫</td>
                   <td>
-                    {(item.quantity * item.price)?.toLocaleString()} VND
+                    {Number(
+                      (item.quantity || 0) * (item.price || 0)
+                    ).toLocaleString("vi-VN")}{" "}
+                    ₫
                   </td>
                 </tr>
               ))}
             </tbody>
           </table>
         ) : (
-          <p>No products in this order</p>
+          <p>Chưa có sản phẩm trong lệnh</p>
         )}
       </div>
     </div>

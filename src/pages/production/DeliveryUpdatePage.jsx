@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from "react";
-import axios from "axios";
-import "../../styles/production/deliveryUpdatePage.css";
+import { deliveryService } from "../../application/services";
 
 const DeliveryUpdatePage = () => {
   const [orders, setOrders] = useState([]);
@@ -16,9 +15,7 @@ const DeliveryUpdatePage = () => {
       setLoading(true);
 
       // TODO: đổi API theo backend
-      const res = await axios.get(
-        "http://localhost:5000/api/delivery/orders"
-      );
+      const res = await deliveryService.getOrders();
 
       setOrders(res.data || []);
     } catch (error) {
@@ -32,9 +29,7 @@ const DeliveryUpdatePage = () => {
     try {
       setUpdatingId(orderId);
 
-      await axios.put(
-        `http://localhost:5000/api/delivery/orders/${orderId}`,
-        {
+      await deliveryService.update(orderId, {
           status: newStatus,
         }
       );

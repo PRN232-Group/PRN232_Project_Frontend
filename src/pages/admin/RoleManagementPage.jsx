@@ -1,26 +1,21 @@
 import React, { useEffect, useState } from "react";
-import { Table, Button, Modal, Form, Input, Space, message, Select } from "antd";
-import axios from "axios";
-
-const { Option } = Select;
+import { Modal, Form, Input, message } from "antd";
+import { roleService } from "../../application/services";
 
 const RoleManagementPage = () => {
   const [roles, setRoles] = useState([]);
   const [loading, setLoading] = useState(false);
-
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingRole, setEditingRole] = useState(null);
-
   const [form] = Form.useForm();
 
-  // Fetch roles
   const fetchRoles = async () => {
     try {
       setLoading(true);
-      const res = await axios.get("/api/roles");
-      setRoles(res.data);
-    } catch (err) {
-      message.error("Failed to load roles");
+      const res = await roleService.getAll();
+      setRoles((res.data || []).filter((r) => r.name !== "Production"));
+    } catch {
+      message.error("Không tải được vai trò");
     } finally {
       setLoading(false);
     }
@@ -30,147 +25,139 @@ const RoleManagementPage = () => {
     fetchRoles();
   }, []);
 
-  // Open modal
   const openModal = (role = null) => {
     setEditingRole(role);
     setIsModalOpen(true);
-
-    if (role) {
-      form.setFieldsValue({
-        name: role.name,
-        description: role.description,
-        status: role.status,
-      });
-    } else {
-      form.resetFields();
-    }
+    if (role) form.setFieldsValue(role);
+    else form.resetFields();
   };
 
-  // Close modal
-  const handleClose = () => {
-    setIsModalOpen(false);
-    setEditingRole(null);
-    form.resetFields();
-  };
-
-  // Submit create/update
   const handleSubmit = async (values) => {
     try {
       if (editingRole) {
-        await axios.put(`/api/roles/${editingRole.id}`, values);
-        message.success("Role updated successfully");
+        await roleService.update(editingRole.id, values);
+        message.success("Đã cập nhật");
       } else {
-        await axios.post("/api/roles", values);
-        message.success("Role created successfully");
+        await roleService.create(values);
+        message.success("Đã tạo vai trò");
       }
-
-      handleClose();
+      setIsModalOpen(false);
       fetchRoles();
-    } catch (err) {
-      message.error("Operation failed");
+    } catch {
+      message.error("Thao tác thất bại");
     }
   };
 
-  // Delete role
   const handleDelete = async (id) => {
+    if (!window.confirm("Xóa vai trò này?")) return;
     try {
-      await axios.delete(`/api/roles/${id}`);
-      message.success("Role deleted");
+      await roleService.remove(id);
+      message.success("Đã xóa");
       fetchRoles();
-    } catch (err) {
-      message.error("Delete failed");
+    } catch {
+      message.error("Xóa thất bại");
     }
   };
-
-  const columns = [
-    {
-      title: "ID",
-      dataIndex: "id",
-      key: "id",
-      width: 80,
-    },
-    {
-      title: "Role Name",
-      dataIndex: "name",
-      key: "name",
-    },
-    {
-      title: "Description",
-      dataIndex: "description",
-      key: "description",
-    },
-    {
-      title: "Status",
-      dataIndex: "status",
-      key: "status",
-      render: (status) =>
-        status === "ACTIVE" ? (
-          <span style={{ color: "green" }}>ACTIVE</span>
-        ) : (
-          <span style={{ color: "red" }}>INACTIVE</span>
-        ),
-    },
-    {
-      title: "Actions",
-      key: "actions",
-      render: (_, record) => (
-        <Space>
-          <Button type="primary" onClick={() => openModal(record)}>
-            Edit
-          </Button>
-          <Button danger onClick={() => handleDelete(record.id)}>
-            Delete
-          </Button>
-        </Space>
-      ),
-    },
-  ];
 
   return (
-    <div style={{ padding: 20 }}>
-      <h2>Role Management</h2>
+    <div className="staff-page">
+      <h2>Phân quyền</h2>
+      <p className="staff-page-sub">
+        Customer · Sales · Manager · Admin — khớp login mock & guard.
+      </p>
 
-      <Button type="primary" onClick={() => openModal()}>
-        + Add Role
-      </Button>
+      <div className="staff-toolbar">
+        <button
+          type="button"
+          className="staff-btn staff-btn-primary"
+          onClick={() => openModal()}
+        >
+          + Thêm role
+        </button>
+        <button
+          type="button"
+          className="staff-btn staff-btn-ghost"
+          onClick={fetchRoles}
+        >
+          Tải lại
+        </button>
+      </div>
 
-      <Table
-        style={{ marginTop: 16 }}
-        columns={columns}
-        dataSource={roles}
-        rowKey="id"
-        loading={loading}
-      />
+      <div className="staff-panel">
+        <table className="staff-table">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Tên</th>
+              <th>Mô tả</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            {loading ? (
+              <tr>
+                <td colSpan={4} className="staff-empty">
+                  Đang tải...
+                </td>
+              </tr>
+            ) : (
+              roles.map((r) => (
+                <tr key={r.id}>
+                  <td>#{r.id}</td>
+                  <td>
+                    <strong>{r.name}</strong>
+                  </td>
+                  <td style={{ color: "var(--muted)" }}>{r.description}</td>
+                  <td>
+                    <div className="staff-actions">
+                      <button
+                        type="button"
+                        className="staff-btn staff-btn-ghost"
+                        onClick={() => openModal(r)}
+                      >
+                        Sửa
+                      </button>
+                      <button
+                        type="button"
+                        className="staff-btn staff-btn-danger"
+                        onClick={() => handleDelete(r.id)}
+                      >
+                        Xóa
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))
+            )}
+            {!loading && roles.length === 0 && (
+              <tr>
+                <td colSpan={4} className="staff-empty">
+                  Chưa có role
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
 
       <Modal
-        title={editingRole ? "Edit Role" : "Add Role"}
+        title={editingRole ? "Sửa role" : "Thêm role"}
         open={isModalOpen}
-        onCancel={handleClose}
+        onCancel={() => setIsModalOpen(false)}
         onOk={() => form.submit()}
-        okText="Save"
+        okText="Lưu"
+        cancelText="Hủy"
       >
         <Form form={form} layout="vertical" onFinish={handleSubmit}>
           <Form.Item
-            label="Role Name"
             name="name"
-            rules={[{ required: true, message: "Please enter role name" }]}
+            label="Tên"
+            rules={[{ required: true, message: "Nhập tên" }]}
           >
-            <Input />
+            <Input placeholder="Sales / Manager / ..." />
           </Form.Item>
-
-          <Form.Item label="Description" name="description">
+          <Form.Item name="description" label="Mô tả">
             <Input.TextArea rows={3} />
-          </Form.Item>
-
-          <Form.Item
-            label="Status"
-            name="status"
-            rules={[{ required: true, message: "Please select status" }]}
-          >
-            <Select placeholder="Select status">
-              <Option value="ACTIVE">ACTIVE</Option>
-              <Option value="INACTIVE">INACTIVE</Option>
-            </Select>
           </Form.Item>
         </Form>
       </Modal>

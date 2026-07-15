@@ -1,9 +1,16 @@
-import { createBrowserRouter } from "react-router-dom";
+import { createBrowserRouter, Navigate } from "react-router-dom";
 import { lazy, Suspense } from "react";
 
 import RootLayout from "../layout/RootLayout";
 import DashboardShell from "../components/dashboard/DashboardShell";
 import Loading from "../components/Loading";
+import RequireAuth from "../presentation/guards/RequireAuth";
+
+const BackOffice = ({ section }) => (
+  <RequireAuth section={section}>
+    <DashboardShell section={section} />
+  </RequireAuth>
+);
 
 const load = (Comp) => (
   <Suspense fallback={<Loading />}>
@@ -41,7 +48,7 @@ const SystemLogPage = lazy(() => import("../pages/admin/SystemLogPage"));
 /* ===== MANAGER ===== */
 const ManagerDashboardPage = lazy(() => import("../pages/manager/ManagerDashboardPage"));
 const ProductManagementPage = lazy(() => import("../pages/manager/ProductManagementPage"));
-const OrderManagementPage = lazy(() => import("../pages/manager/OrderManagementPage"));
+const DesignManagementPage = lazy(() => import("../pages/manager/DesignManagementPage"));
 const PriceManagementPage = lazy(() => import("../pages/manager/PriceManagementPage"));
 const BestSellingProductsPage = lazy(() => import("../pages/manager/BestSellingProductsPage"));
 const RevenueReportPage = lazy(() => import("../pages/manager/RevenueReportPage"));
@@ -53,13 +60,6 @@ const QuotationRequestPage = lazy(() => import("../pages/sales/QuotationRequestP
 const QuotationApprovalPage = lazy(() => import("../pages/sales/QuotationApprovalPage"));
 const DesignRequestDetailPage = lazy(() => import("../pages/sales/DesignRequestDetailPage"));
 const CustomerChatManagementPage = lazy(() => import("../pages/sales/CustomerChatManagementPage"));
-
-/* ===== PRODUCTION ===== */
-const ProductionDashboardPage = lazy(() => import("../pages/production/ProductionDashboardPage"));
-const ProductionOrderListPage = lazy(() => import("../pages/production/ProductionOrderListPage"));
-const ProductionOrderDetailPage = lazy(() => import("../pages/production/ProductionOrderDetailPage"));
-const ProductionProgressPage = lazy(() => import("../pages/production/ProductionProgressPage"));
-const DeliveryUpdatePage = lazy(() => import("../pages/production/DeliveryUpdatePage"));
 
 export const router = createBrowserRouter([
   /* ===== PUBLIC ===== */
@@ -91,7 +91,7 @@ export const router = createBrowserRouter([
   /* ===== ADMIN ===== */
   {
     path: "/admin",
-    element: <DashboardShell section="admin" />,
+    element: <BackOffice section="admin" />,
     children: [
       { index: true, element: load(AdminDashboardPage) },
       { path: "users", element: load(UserManagementPage) },
@@ -99,27 +99,37 @@ export const router = createBrowserRouter([
       { path: "categories", element: load(CategoryManagementPage) },
       { path: "contents", element: load(ContentManagementPage) },
       { path: "system-logs", element: load(SystemLogPage) },
+      /* Alias: danh mục chuẩn nằm ở /manager/categories */
+      {
+        path: "orders",
+        element: <Navigate to="/sales/orders" replace />,
+      },
     ],
   },
 
   /* ===== MANAGER ===== */
   {
     path: "/manager",
-    element: <DashboardShell section="manager" />,
+    element: <BackOffice section="manager" />,
     children: [
       { index: true, element: load(ManagerDashboardPage) },
       { path: "products", element: load(ProductManagementPage) },
-      { path: "orders", element: load(OrderManagementPage) },
+      { path: "designs", element: load(DesignManagementPage) },
+      { path: "categories", element: load(CategoryManagementPage) },
       { path: "prices", element: load(PriceManagementPage) },
       { path: "best-selling", element: load(BestSellingProductsPage) },
       { path: "revenue", element: load(RevenueReportPage) },
+      {
+        path: "orders",
+        element: <Navigate to="/manager" replace />,
+      },
     ],
   },
 
   /* ===== SALES ===== */
   {
     path: "/sales",
-    element: <DashboardShell section="sales" />,
+    element: <BackOffice section="sales" />,
     children: [
       { index: true, element: load(SalesDashboardPage) },
       { path: "orders", element: load(SalesOrderManagementPage) },
@@ -128,19 +138,6 @@ export const router = createBrowserRouter([
       { path: "design-requests", element: load(DesignRequestDetailPage) },
       { path: "design-requests/:id", element: load(DesignRequestDetailPage) },
       { path: "chat", element: load(CustomerChatManagementPage) },
-    ],
-  },
-
-  /* ===== PRODUCTION ===== */
-  {
-    path: "/production",
-    element: <DashboardShell section="production" />,
-    children: [
-      { index: true, element: load(ProductionDashboardPage) },
-      { path: "orders", element: load(ProductionOrderListPage) },
-      { path: "orders/:id", element: load(ProductionOrderDetailPage) },
-      { path: "progress", element: load(ProductionProgressPage) },
-      { path: "delivery", element: load(DeliveryUpdatePage) },
     ],
   },
 ]);

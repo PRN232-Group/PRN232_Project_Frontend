@@ -1,0 +1,528 @@
+/* DashboardShell — shared across Admin / Manager / Sales / Production */
+
+.dash-brand-mark {
+  display: grid;
+  place-items: center;
+  height: 40px;
+  width: 40px;
+  min-width: 40px;
+  border-radius: 12px;
+  font-weight: 700;
+  color: #fff;
+  background: linear-gradient(135deg, var(--clay), var(--clay-dark));
+  font-family: var(--font-serif);
+}
+
+.dash-brand-name {
+  color: #fff;
+  font-weight: 700;
+  font-size: 16px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.dash-brand-sub {
+  color: rgba(255, 255, 255, 0.55);
+  font-size: 12px;
+}
+
+/* Collapsible admin sections — accordion + clay motion */
+.dash-side-menu.ant-menu-dark {
+  --dash-ease: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.dash-side-menu.ant-menu-inline .ant-menu-submenu-title {
+  margin: 4px 0 !important;
+  border-radius: 10px !important;
+  color: rgba(255, 255, 255, 0.78) !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.01em;
+  transition:
+    background 0.28s var(--dash-ease),
+    color 0.28s var(--dash-ease),
+    transform 0.28s var(--dash-ease) !important;
+}
+
+.dash-side-menu.ant-menu-inline .ant-menu-submenu-title:hover {
+  background: rgba(176, 120, 79, 0.22) !important;
+  color: #fff !important;
+}
+
+.dash-side-menu.ant-menu-inline .ant-menu-submenu-open > .ant-menu-submenu-title {
+  background: rgba(176, 120, 79, 0.28) !important;
+  color: #fff !important;
+}
+
+.dash-side-menu .ant-menu-submenu-arrow {
+  color: rgba(255, 255, 255, 0.45) !important;
+  inset-inline-end: 14px !important;
+  transition: transform 0.35s var(--dash-ease), color 0.28s ease !important;
+}
+
+.dash-side-menu .ant-menu-submenu-open > .ant-menu-submenu-title .ant-menu-submenu-arrow {
+  color: var(--clay-soft, #ddc0a1) !important;
+}
+
+.dash-side-menu .ant-menu-sub.ant-menu-inline {
+  background: transparent !important;
+  padding-bottom: 4px;
+}
+
+.dash-side-menu .ant-menu-sub.ant-menu-inline .ant-menu-item {
+  margin: 2px 0 !important;
+  border-radius: 10px !important;
+  height: 40px !important;
+  line-height: 40px !important;
+  opacity: 0;
+  transform: translateX(-6px);
+  animation: dashSubItemIn 0.32s var(--dash-ease) forwards;
+}
+
+.dash-side-menu .ant-menu-sub.ant-menu-inline .ant-menu-item:nth-child(1) {
+  animation-delay: 0.03s;
+}
+.dash-side-menu .ant-menu-sub.ant-menu-inline .ant-menu-item:nth-child(2) {
+  animation-delay: 0.06s;
+}
+.dash-side-menu .ant-menu-sub.ant-menu-inline .ant-menu-item:nth-child(3) {
+  animation-delay: 0.09s;
+}
+.dash-side-menu .ant-menu-sub.ant-menu-inline .ant-menu-item:nth-child(4) {
+  animation-delay: 0.12s;
+}
+.dash-side-menu .ant-menu-sub.ant-menu-inline .ant-menu-item:nth-child(5) {
+  animation-delay: 0.15s;
+}
+
+@keyframes dashSubItemIn {
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.dash-side-menu.ant-menu-dark .ant-menu-item-selected {
+  background: var(--clay, #b0784f) !important;
+}
+
+.dash-side-menu.ant-menu-inline .ant-menu-item {
+  border-radius: 10px !important;
+  transition: background 0.25s var(--dash-ease), color 0.25s ease !important;
+}
+
+.dash-topbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px clamp(12px, 3vw, 22px);
+  background: var(--surface);
+  border-bottom: 1px solid var(--line);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  min-width: 0;
+}
+
+.dash-menu-btn.ant-btn {
+  display: grid !important;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  min-width: 40px;
+  border-radius: 10px !important;
+  border: 1px solid var(--line) !important;
+  background: var(--cream) !important;
+  color: var(--ink) !important;
+  flex-shrink: 0;
+}
+
+.dash-topbar-title {
+  font-weight: 600;
+  color: var(--ink);
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: clamp(0.85rem, 2.5vw, 1rem);
+}
+
+.dash-home-link {
+  margin-left: auto;
+  color: var(--clay-dark);
+  font-weight: 600;
+  white-space: nowrap;
+  font-size: clamp(0.8rem, 2.2vw, 0.95rem);
+  flex-shrink: 0;
+}
+
+.dash-content {
+  padding: clamp(12px, 3vw, 28px);
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+.dash-panel {
+  background: var(--surface);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--line);
+  box-shadow: var(--shadow-sm);
+  padding: clamp(14px, 3vw, 28px);
+  min-height: 70vh;
+  max-width: 100%;
+  overflow-x: auto;
+  animation: fadeIn 0.45s var(--ease) both;
+}
+
+/* staff-page đã tự có panel — bỏ khung trắng kép */
+.dash-panel:has(.staff-page) {
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  padding: 0;
+  min-height: auto;
+  overflow: visible;
+}
+
+/* Ant Design tables inside staff pages */
+.staff-page .ant-table {
+  background: transparent;
+}
+.staff-page .ant-table-thead > tr > th {
+  background: var(--sand) !important;
+  color: var(--muted) !important;
+  font-size: 0.72rem !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  border-bottom: 1px solid var(--line) !important;
+}
+.staff-page .ant-table-tbody > tr > td {
+  border-bottom: 1px solid var(--line) !important;
+}
+.staff-page .ant-table-tbody > tr:hover > td {
+  background: var(--clay-tint) !important;
+}
+.staff-page .ant-btn-primary {
+  background: var(--clay) !important;
+  border-color: var(--clay) !important;
+}
+.staff-page .ant-btn-primary:hover {
+  background: var(--clay-dark) !important;
+  border-color: var(--clay-dark) !important;
+}
+
+/* Staff chat layout */
+.staff-chat {
+  display: grid;
+  grid-template-columns: minmax(220px, 300px) 1fr;
+  gap: 16px;
+  min-height: min(70vh, 620px);
+}
+@media (max-width: 860px) {
+  .staff-chat {
+    grid-template-columns: 1fr;
+  }
+}
+.staff-chat-list {
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  max-height: min(70vh, 620px);
+}
+.staff-chat-list-head {
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--line);
+  background: var(--cream);
+  font-weight: 700;
+  color: var(--ink);
+}
+.staff-chat-list-body {
+  overflow-y: auto;
+  flex: 1;
+}
+.staff-chat-person {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  width: 100%;
+  padding: 12px 14px;
+  border: none;
+  border-bottom: 1px solid var(--line);
+  background: transparent;
+  cursor: pointer;
+  text-align: left;
+}
+.staff-chat-person:hover,
+.staff-chat-person.is-active {
+  background: var(--clay-tint);
+}
+.staff-chat-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--clay), var(--clay-dark));
+  color: #fff;
+  display: grid;
+  place-items: center;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+.staff-chat-person strong {
+  display: block;
+  color: var(--ink);
+  font-size: 0.9rem;
+}
+.staff-chat-person span {
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+.staff-chat-main {
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  display: flex;
+  flex-direction: column;
+  min-height: 420px;
+  max-height: min(70vh, 620px);
+  overflow: hidden;
+}
+.staff-chat-header {
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--line);
+  background: var(--cream);
+  font-weight: 700;
+}
+.staff-chat-messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px;
+  background:
+    linear-gradient(180deg, var(--cream) 0%, var(--sand) 100%);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.staff-bubble {
+  max-width: min(75%, 420px);
+  padding: 10px 14px;
+  border-radius: 16px;
+  font-size: 0.9rem;
+  line-height: 1.45;
+}
+.staff-bubble.is-staff {
+  align-self: flex-end;
+  background: var(--clay);
+  color: #fff;
+  border-bottom-right-radius: 4px;
+}
+.staff-bubble.is-customer {
+  align-self: flex-start;
+  background: #fff;
+  border: 1px solid var(--line);
+  color: var(--ink);
+  border-bottom-left-radius: 4px;
+}
+.staff-bubble-time {
+  font-size: 0.68rem;
+  opacity: 0.75;
+  margin-top: 4px;
+}
+.staff-chat-compose {
+  display: flex;
+  gap: 8px;
+  padding: 12px;
+  border-top: 1px solid var(--line);
+  background: var(--surface);
+}
+.staff-chat-compose input {
+  flex: 1;
+  min-height: 42px;
+  padding: 8px 14px;
+  border: 1.5px solid var(--line);
+  border-radius: var(--radius-pill);
+  background: var(--cream);
+}
+.staff-chart-card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  padding: 16px 18px;
+  box-shadow: var(--shadow-xs);
+  height: 300px;
+  display: flex;
+  flex-direction: column;
+}
+.staff-chart-card h3 {
+  margin: 0 0 12px;
+  font-family: var(--font-sans);
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--ink);
+}
+.staff-chart-card .chart-wrap {
+  flex: 1;
+  min-height: 0;
+}
+.staff-table input[type="number"] {
+  width: 100%;
+  max-width: 130px;
+  min-height: 36px;
+  padding: 6px 10px;
+  border: 1.5px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: #fff;
+}
+.staff-split > .staff-panel {
+  min-height: 420px;
+}
+
+/* Split list+detail layouts (sales orders, chat, quotations) */
+.order-container,
+.chat-container,
+.quotation-container,
+.quotation-request-container {
+  display: grid;
+  grid-template-columns: minmax(240px, 320px) 1fr;
+  gap: 20px;
+  min-width: 0;
+}
+
+@media (max-width: 900px) {
+  .order-container,
+  .chat-container,
+  .quotation-container,
+  .quotation-request-container {
+    grid-template-columns: 1fr;
+  }
+}
+
+.order-list,
+.chat-sidebar,
+.customer-list {
+  min-width: 0;
+  max-height: min(70vh, 640px);
+  overflow: auto;
+  border: 1px solid var(--line);
+  border-radius: var(--border-radius);
+  background: var(--cream);
+}
+
+.order-item,
+.customer-item {
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--line);
+  cursor: pointer;
+  transition: background var(--transition);
+}
+.order-item:hover,
+.customer-item:hover,
+.order-item.active,
+.customer-item.active {
+  background: var(--clay-tint);
+}
+
+.order-detail,
+.chat-box {
+  min-width: 0;
+}
+
+.order-detail .empty,
+.chat-box .no-chat,
+.no-chat {
+  padding: 40px 16px;
+  text-align: center;
+  color: var(--muted);
+}
+
+.update-btn,
+.reply-btn {
+  margin-top: 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: var(--radius-pill);
+  background: var(--clay);
+  color: #fff;
+  font-weight: 600;
+  padding: 11px 22px;
+  transition: transform var(--transition), background var(--transition);
+}
+.update-btn:hover,
+.reply-btn:hover {
+  background: var(--clay-dark);
+  transform: translateY(-2px);
+}
+
+/* Status chips — same across roles */
+.status,
+.status.pending,
+.status.Pending {
+  display: inline-flex;
+  padding: 4px 10px;
+  border-radius: var(--radius-pill);
+  font-size: 0.75rem;
+  font-weight: 600;
+  background: color-mix(in srgb, var(--warning) 18%, #fff);
+  color: var(--warning);
+}
+.status.processing,
+.status.Processing {
+  background: color-mix(in srgb, var(--clay) 18%, #fff);
+  color: var(--clay-dark);
+}
+.status.shipping,
+.status.Shipping,
+.status.shipped {
+  background: color-mix(in srgb, var(--clay-dark) 14%, #fff);
+  color: var(--clay-dark);
+}
+.status.completed,
+.status.Completed,
+.status.done {
+  background: color-mix(in srgb, var(--success) 16%, #fff);
+  color: var(--success);
+}
+.status.cancelled,
+.status.Cancelled,
+.status.canceled {
+  background: color-mix(in srgb, var(--danger) 14%, #fff);
+  color: var(--danger);
+}
+
+/* Prevent native tables from overflowing on small screens */
+.order-management-page,
+.product-management-page,
+.user-management-page,
+.sales-order-management-page,
+.page {
+  overflow-x: auto;
+}
+
+table.item-table,
+.order-table,
+.user-table,
+.cart-table {
+  width: 100%;
+  min-width: 520px;
+}
+
+@media (max-width: 640px) {
+  .dash-home-link {
+    font-size: 0.75rem;
+  }
+  .toolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .toolbar select,
+  .toolbar input,
+  .toolbar button {
+    width: 100%;
+    min-width: 0;
+  }
+}

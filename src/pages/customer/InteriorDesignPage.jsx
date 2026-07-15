@@ -1,144 +1,177 @@
-import React, { useEffect, useState } from "react";
-import axios from "axios";
+import React, { useCallback, useEffect, useState } from "react";
+import { useLocation } from "react-router-dom";
 import "../../styles/customer/interiorDesignPage.css";
+import DesignDetailModal from "../../components/DesignDetailModal";
+import { interiorDesignService } from "../../application/services";
+
+const CATEGORIES = [
+  { key: "All", label: "Tất cả" },
+  { key: "Living", label: "Phòng khách" },
+  { key: "Bedroom", label: "Phòng ngủ" },
+  { key: "Workspace", label: "Làm việc" },
+  { key: "Kitchen", label: "Bếp" },
+];
+
+const CATEGORY_LABELS = {
+  Living: "Phòng khách",
+  Bedroom: "Phòng ngủ",
+  Workspace: "Làm việc",
+  Kitchen: "Bếp",
+};
+
+const normalizeDesign = (d) => ({
+  ...d,
+  image: d.image || d.imageUrl || "",
+  category: d.category || "Living",
+});
+
+const excerpt = (text, max = 72) =>
+  !text
+    ? ""
+    : text.length <= max
+      ? text
+      : `${text.slice(0, max).trim()}…`;
 
 const InteriorDesignPage = () => {
+  const location = useLocation();
   const [designs, setDesigns] = useState([]);
   const [filtered, setFiltered] = useState([]);
   const [category, setCategory] = useState("All");
-  const [selected, setSelected] = useState(null);
-
+  const [selectedId, setSelectedId] = useState(null);
+  const [detail, setDetail] = useState(null);
+  const [detailLoading, setDetailLoading] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-
-  const categories = ["All", "Living Room", "Bedroom", "Kitchen", "Office"];
 
   useEffect(() => {
     fetchDesigns();
   }, []);
 
   useEffect(() => {
-    filterData();
+    if (category === "All") setFiltered(designs);
+    else setFiltered(designs.filter((d) => d.category === category));
   }, [category, designs]);
+
+  useEffect(() => {
+    const openId = location.state?.openId;
+    if (openId != null) openDetail(openId);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.state?.openId]);
 
   const fetchDesigns = async () => {
     try {
       setLoading(true);
       setError("");
-
-      const res = await axios.get(
-        "https://localhost:5001/api/interior-designs"
-      );
-
-      setDesigns(res.data || []);
-      setFiltered(res.data || []);
+      const res = await interiorDesignService.getAll();
+      const list = (res.data || [])
+        .filter((d) => d.isPublished !== false)
+        .map(normalizeDesign);
+      setDesigns(list);
     } catch (err) {
       console.error(err);
-
-      // fallback demo data
-      const demo = [
-        {
-          id: 1,
-          title: "Modern Living Room",
-          category: "Living Room",
-          image:
-            "https://images.unsplash.com/photo-1505693416388-ac5ce068fe85",
-          description: "Phong cách phòng khách hiện đại, tối giản.",
-        },
-        {
-          id: 2,
-          title: "Luxury Bedroom",
-          category: "Bedroom",
-          image:
-            "https://images.unsplash.com/photo-1505693314120-0d443867891c",
-          description: "Phòng ngủ sang trọng, ấm cúng.",
-        },
-        {
-          id: 3,
-          title: "Modern Kitchen",
-          category: "Kitchen",
-          image:
-            "https://images.unsplash.com/photo-1556911220-e15b29be8c8f",
-          description: "Nhà bếp hiện đại, tiện nghi.",
-        },
-      ];
-
-      setDesigns(demo);
-      setFiltered(demo);
+      setError("Không tải được mẫu thiết kế");
     } finally {
       setLoading(false);
     }
   };
 
-  const filterData = () => {
-    if (category === "All") {
-      setFiltered(designs);
-    } else {
-      setFiltered(
-        designs.filter((d) => d.category === category)
-      );
+  const openDetail = useCallback(async (id) => {
+    setSelectedId(id);
+    setDetail(null);
+    setDetailLoading(true);
+    try {
+      const res = await interiorDesignService.getById(id);
+      setDetail(normalizeDesign(res.data));
+    } catch (err) {
+      console.error(err);
+      const fallback = designs.find((d) => d.id === id);
+      if (fallback) setDetail(fallback);
+    } finally {
+      setDetailLoading(false);
     }
+  }, [designs]);
+
+  const closeDetail = () => {
+    setSelectedId(null);
+    setDetail(null);
+    setDetailLoading(false);
   };
 
   return (
     <div className="interior-page">
-      {/* HERO */}
       <div className="hero">
-        <h1>Interior Design Inspiration</h1>
-        <p>Khám phá các mẫu thiết kế nội thất đẹp & hiện đại</p>
+        <h1>Cảm hứng thiết kế nội thất</h1>
+        <p>
+          Khám phá concept 3D với thông số vật liệu, ngân sách và sản phẩm
+          liên quan — sẵn sàng đặt hàng từ Interior Studio.
+        </p>
       </div>
 
-      {/* FILTER */}
       <div className="filter-bar">
-        {categories.map((c) => (
+        {CATEGORIES.map((c) => (
           <button
-            key={c}
-            className={category === c ? "active" : ""}
-            onClick={() => setCategory(c)}
+            key={c.key}
+            type="button"
+            className={category === c.key ? "active" : ""}
+            onClick={() => setCategory(c.key)}
           >
-            {c}
+            {c.label}
           </button>
         ))}
       </div>
 
-      {/* CONTENT */}
-      {loading && <p>Loading designs...</p>}
+      {loading && <p className="interior-status">Đang tải mẫu thiết kế...</p>}
       {error && <p className="error">{error}</p>}
 
       <div className="grid">
         {!loading &&
           filtered.map((item) => (
-            <div
+            <article
               key={item.id}
               className="card"
-              onClick={() => setSelected(item)}
+              onClick={() => openDetail(item.id)}
+              role="button"
+              tabIndex={0}
+              onKeyDown={(e) => e.key === "Enter" && openDetail(item.id)}
             >
-              <img src={item.image} alt={item.title} />
-              <h3>{item.title}</h3>
-              <p>{item.category}</p>
-            </div>
+              <div className="card-media">
+                <img
+                  src={item.image}
+                  alt={item.title}
+                  loading="lazy"
+                  onError={(e) => {
+                    e.currentTarget.src =
+                      "https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?w=800&q=60";
+                  }}
+                />
+                <span className="card-badge">
+                  {CATEGORY_LABELS[item.category] || item.category}
+                </span>
+              </div>
+              <div className="card-body">
+                <h3>{item.title}</h3>
+                <p>{excerpt(item.description)}</p>
+              </div>
+              <div className="card-footer">
+                {item.areaSqm != null && (
+                  <span className="card-meta">{item.areaSqm} m²</span>
+                )}
+                <span className="card-cta">Xem chi tiết</span>
+              </div>
+            </article>
           ))}
       </div>
 
-      {/* MODAL */}
-      {selected && (
-        <div
-          className="modal-overlay"
-          onClick={() => setSelected(null)}
-        >
-          <div
-            className="modal"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <img src={selected.image} alt={selected.title} />
-            <h2>{selected.title}</h2>
-            <p>{selected.description}</p>
+      {!loading && filtered.length === 0 && (
+        <p className="interior-status">Không có mẫu trong danh mục này</p>
+      )}
 
-            <button onClick={() => setSelected(null)}>
-              Close
-            </button>
-          </div>
-        </div>
+      {selectedId != null && (
+        <DesignDetailModal
+          design={detail}
+          loading={detailLoading}
+          onClose={closeDetail}
+        />
       )}
     </div>
   );

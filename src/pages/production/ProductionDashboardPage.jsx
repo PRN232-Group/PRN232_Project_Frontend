@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from "react";
-import axios from "axios";
-import "../../styles/production/productionDashboardPage.css";
+import { productionService } from "../../application/services";
 
 const ProductionDashboardPage = () => {
   const [stats, setStats] = useState({
@@ -22,9 +21,7 @@ const ProductionDashboardPage = () => {
       setLoading(true);
 
       // TODO: đổi API backend của bạn
-      const res = await axios.get(
-        "http://localhost:5000/api/production/dashboard"
-      );
+      const res = await productionService.getDashboard();
 
       // fallback nếu API chưa có
       const data = res.data || {};

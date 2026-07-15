@@ -1,67 +1,100 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import axios from "axios";
 import "../../styles/customer/homePage.css";
+import DesignStoriesCarousel from "../../components/DesignStoriesCarousel";
+import { interiorDesignService } from "../../application/services";
+
+const CATEGORY_LABELS = {
+  Living: "Phòng khách",
+  Bedroom: "Phòng ngủ",
+  Workspace: "Làm việc",
+  Kitchen: "Bếp",
+};
+
+const FALLBACK_IMG =
+  "https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?w=800&q=80";
 
 const HomePage = () => {
   const navigate = useNavigate();
-
-  const [blogs, setBlogs] = useState([]);
-  const [index, setIndex] = useState(0);
-  const visible = 3;
-
-  const fallbackStories = [
-    {
-      id: "living-warmth",
-      title: "Ấm áp trong từng đường nét gỗ",
-      imageUrl:
-        "https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?w=800&q=80",
-    },
-    {
-      id: "soft-minimal",
-      title: "Tối giản mà tinh tế",
-      imageUrl:
-        "https://images.unsplash.com/photo-1615529182904-14819c35db37?w=800&q=80",
-    },
-    {
-      id: "natural-light",
-      title: "Không gian ngập tràn ánh sáng",
-      imageUrl:
-        "https://images.unsplash.com/photo-1618221195710-dd6b41faaea6?w=800&q=80",
-    },
-    {
-      id: "cozy-bedroom",
-      title: "Phòng ngủ như một chốn nghỉ dưỡng",
-      imageUrl:
-        "https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=800&q=80",
-    },
-  ];
+  const [stories, setStories] = useState([]);
 
   useEffect(() => {
-    const fetchBlogs = async () => {
+    const loadStories = async () => {
       try {
-        const res = await axios.get("https://localhost:7293/api/Blog");
-        const data = res?.data?.data?.blogs || [];
-        setBlogs(data.length ? data : fallbackStories);
-      } catch (e) {
-        setBlogs(fallbackStories);
+        const res = await interiorDesignService.getAll();
+        const designs = (res?.data || []).filter((d) => d.isPublished !== false);
+        if (designs.length) {
+          setStories(
+            designs.map((d) => ({
+              id: d.id,
+              designId: d.id,
+              title: d.title,
+              category: CATEGORY_LABELS[d.category] || d.category,
+              excerpt: d.description
+                ? `${d.description.slice(0, 88)}${d.description.length > 88 ? "…" : ""}`
+                : "Khám phá concept & sản phẩm",
+              imageUrl: d.imageUrl || d.image || FALLBACK_IMG,
+            }))
+          );
+          return;
+        }
+      } catch {
+        /* use fallback below */
       }
-    };
-    fetchBlogs();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
 
-  const getVisible = () =>
-    blogs.length
-      ? Array.from({ length: visible }).map(
-          (_, i) => blogs[(index + i) % blogs.length]
-        )
-      : [];
+      setStories([
+        {
+          id: 1,
+          designId: 1,
+          title: "Phòng khách Japandi",
+          category: "Phòng khách",
+          excerpt: "Tone sáng, gỗ ấm — concept đầy đủ vật liệu & sản phẩm",
+          imageUrl:
+            "https://images.unsplash.com/photo-1618221195710-dd6b41faaea6?w=800&q=80",
+        },
+        {
+          id: 2,
+          designId: 2,
+          title: "Phòng ngủ tối giản",
+          category: "Phòng ngủ",
+          excerpt: "Giường thấp, ánh sáng gián tiếp cho giấc ngủ sâu",
+          imageUrl:
+            "https://images.unsplash.com/photo-1631049307264-da0ec9d70304?w=800&q=80",
+        },
+        {
+          id: 3,
+          designId: 3,
+          title: "Góc làm việc tại nhà",
+          category: "Làm việc",
+          excerpt: "Bàn gỗ + ghế ergonomic, setup WFH chuyên nghiệp",
+          imageUrl:
+            "https://images.unsplash.com/photo-1497366216548-37526070297c?w=800&q=80",
+        },
+        {
+          id: 4,
+          designId: 4,
+          title: "Bếp mở Scandinavian",
+          category: "Bếp",
+          excerpt: "Tủ matte, mặt đá quartz, quy trình bếp chuẩn",
+          imageUrl:
+            "https://images.unsplash.com/photo-1556911220-bff31c812dba?w=800&q=80",
+        },
+        {
+          id: 5,
+          designId: 5,
+          title: "Phòng khách ấm áp",
+          category: "Phòng khách",
+          excerpt: "Kệ walnut, sofa linen & đèn brass",
+          imageUrl:
+            "https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?w=800&q=80",
+        },
+      ]);
+    };
+    loadStories();
+  }, []);
 
   return (
     <div className="interior">
-
-      {/* HERO - SHOWROOM STYLE */}
       <section className="hero-interior">
         <div className="hero-text">
           <span className="tag">Interior Concept Studio</span>
@@ -70,113 +103,111 @@ const HomePage = () => {
             <span>của sự sống & nghệ thuật</span>
           </h1>
           <p>
-            Nội thất hiện đại, tinh tế và ấm áp — được thiết kế riêng cho tổ ấm
-            của bạn với vật liệu tự nhiên và cảm hứng đương đại.
+            Nội thất hiện đại, tinh tế và ấm áp — thiết kế riêng cho tổ ấm của
+            bạn với vật liệu tự nhiên và cảm hứng đương đại.
           </p>
 
           <div className="hero-btns">
-            <button onClick={() => navigate("/products")}>
+            <button type="button" onClick={() => navigate("/products")}>
               Khám phá bộ sưu tập
             </button>
-            <button className="ghost" onClick={() => navigate("/design")}>
-              Thiết kế 3D
+            <button
+              type="button"
+              className="ghost"
+              onClick={() => navigate("/design")}
+            >
+              Xem concept thiết kế
             </button>
           </div>
         </div>
 
         <div className="hero-gallery">
           <img
-            src="https://images.unsplash.com/photo-1586023492125-27b2c045efd7"
-            alt=""
+            src="https://images.unsplash.com/photo-1586023492125-27b2c045efd7?w=800&q=80"
+            alt="Showroom living"
           />
           <img
-            src="https://images.unsplash.com/photo-1524758631624-e2822e304c36"
-            alt=""
+            src="https://images.unsplash.com/photo-1524758631624-e2822e304c36?w=800&q=80"
+            alt="Showroom workspace"
           />
         </div>
       </section>
 
-      {/* FEATURE CARDS */}
       <section className="features">
         <div className="feature-card">
-          <h3>Minimal Design</h3>
-          <p>Không gian sạch, tinh giản, tập trung trải nghiệm.</p>
+          <h3>Thiết kế tối giản</h3>
+          <p>Không gian sạch, tinh giản, tập trung trải nghiệm sống.</p>
         </div>
-
         <div className="feature-card">
-          <h3>Warm Material</h3>
-          <p>Gam màu gỗ – be – trắng tạo cảm giác an toàn.</p>
+          <h3>Vật liệu ấm</h3>
+          <p>Gam gỗ – be – trắng tạo cảm giác an toàn, gần gũi.</p>
         </div>
-
         <div className="feature-card">
-          <h3>Human Centered</h3>
-          <p>Thiết kế xoay quanh cảm xúc người dùng.</p>
+          <h3>Lấy người dùng làm trung tâm</h3>
+          <p>Bố cục xoay quanh thói quen và cảm xúc hàng ngày.</p>
         </div>
       </section>
 
-      {/* BLOG GALLERY */}
-      <section className="gallery">
+      <section className="gallery gallery-carousel">
         <h2>
           Latest <span>Design Stories</span>
         </h2>
-
-        <div className="gallery-row">
-          {getVisible().map((b, i) => (
-            <div
-              key={i}
-              className="gallery-card"
-              onClick={() => navigate("/design")}
-            >
-              <img src={b?.imageUrl} alt="" />
-              <div className="overlay">
-                <h4>{b?.title}</h4>
-                <p>Interior inspired storytelling</p>
-              </div>
-            </div>
-          ))}
-        </div>
-
-        <div className="nav-btns">
-          <button onClick={() => setIndex(index - 1)}>‹</button>
-          <button onClick={() => setIndex(index + 1)}>›</button>
-        </div>
+        <p className="gallery-sub">
+          Tự động lướt mỗi vài giây — nhấn để xem chi tiết concept &amp; sản
+          phẩm
+        </p>
+        <DesignStoriesCarousel items={stories} autoPlayMs={5500} />
       </section>
 
-      {/* ABOUT / SHOWROOM */}
       <section className="about">
         <div className="about-img">
           <img
-            src="https://images.unsplash.com/photo-1600607686527-6fb886090705"
-            alt=""
+            src="https://images.unsplash.com/photo-1600607686527-6fb886090705?w=1000&q=80"
+            alt="Interior Studio showroom"
           />
         </div>
-
         <div className="about-text">
           <h2>
             Không gian thiết kế <span>cảm xúc</span>
           </h2>
           <p>
-            Chúng tôi biến mỗi căn phòng thành một trải nghiệm cảm xúc, tựa như
-            bước vào một showroom nội thất cao cấp được chăm chút đến từng chi
-            tiết.
+            Mỗi concept gắn với sản phẩm catalog thật — vật liệu, xuất xứ, giá
+            studio và so sánh thị trường — sẵn sàng đặt hàng hoặc yêu cầu tư
+            vấn.
           </p>
-
           <ul>
-            <li>Ánh sáng tự nhiên & dịu nhẹ</li>
+            <li>Ánh sáng tự nhiên &amp; dịu nhẹ</li>
             <li>Bố cục mở, thoáng</li>
-            <li>Thiết kế lấy con người làm trung tâm</li>
+            <li>Liên kết trực tiếp sản phẩm trong concept</li>
           </ul>
+          <button
+            type="button"
+            className="about-cta"
+            onClick={() => navigate("/design")}
+          >
+            Khám phá thiết kế →
+          </button>
         </div>
       </section>
 
-      {/* STATS */}
       <section className="stats">
-        <div><strong>12K+</strong><span>Khách hàng</span></div>
-        <div><strong>4.5K+</strong><span>Dự án hoàn thành</span></div>
-        <div><strong>75+</strong><span>Đối tác</span></div>
-        <div><strong>20+</strong><span>Giải thưởng</span></div>
+        <div>
+          <strong>6+</strong>
+          <span>Dòng sản phẩm</span>
+        </div>
+        <div>
+          <strong>5</strong>
+          <span>Concept thiết kế</span>
+        </div>
+        <div>
+          <strong>100%</strong>
+          <span>Vật liệu có xuất xứ</span>
+        </div>
+        <div>
+          <strong>24h</strong>
+          <span>Phản hồi tư vấn</span>
+        </div>
       </section>
-
     </div>
   );
 };

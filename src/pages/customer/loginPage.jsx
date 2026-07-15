@@ -1,22 +1,53 @@
 import React, { useState, useContext } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import "@fortawesome/fontawesome-free/css/all.min.css";
 import "../../styles/customer/authPage.css";
 import UserContext from "../../contexts/UserContext";
+import { login as loginUseCase } from "../../application/services/authService";
+import { ROLES } from "../../domain/roles";
 
-const ROLE_LANDING = {
-  Customer: "/",
-  Sales: "/sales",
-  Production: "/production",
-  Manager: "/manager",
-  Admin: "/admin",
-};
+/** Mock accounts — khớp src/infrastructure/mock/data.js users */
+const MOCK_ACCOUNTS = [
+  {
+    role: ROLES.CUSTOMER,
+    label: "Khách hàng",
+    email: "an@example.com",
+    password: "123456",
+    hint: "Nguyễn Văn An",
+  },
+  {
+    role: ROLES.SALES,
+    label: "Sales",
+    email: "sales@interior.studio",
+    password: "123456",
+    hint: "Sales Minh",
+  },
+  {
+    role: ROLES.MANAGER,
+    label: "Quản lý",
+    email: "manager@interior.studio",
+    password: "123456",
+    hint: "Manager Lan",
+  },
+  {
+    role: ROLES.ADMIN,
+    label: "Admin",
+    email: "admin@interior.studio",
+    password: "123456",
+    hint: "Admin IS",
+  },
+];
 
 function LoginPage() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { setUser } = useContext(UserContext);
 
-  const [form, setForm] = useState({ email: "", password: "", role: "Customer" });
+  const [form, setForm] = useState({
+    email: MOCK_ACCOUNTS[0].email,
+    password: MOCK_ACCOUNTS[0].password,
+    role: MOCK_ACCOUNTS[0].role,
+  });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -27,39 +58,60 @@ function LoginPage() {
     setError("");
   };
 
+  const applyMockAccount = (acc) => {
+    setForm({
+      email: acc.email,
+      password: acc.password,
+      role: acc.role,
+    });
+    setError("");
+  };
+
+  const loginWithAccount = async (acc) => {
+    setError("");
+    setLoading(true);
+    const payload = {
+      email: acc.email,
+      password: acc.password,
+      role: acc.role,
+    };
+    setForm(payload);
+    try {
+      const { user, landing } = await loginUseCase(payload);
+      setUser(user);
+      const redirect = location.state?.from;
+      const go =
+        redirect &&
+        (user.role === "Customer" || user.role === "customer") &&
+        typeof redirect === "string"
+          ? redirect
+          : landing;
+      navigate(go, { replace: true });
+    } catch (err) {
+      setError(err?.message || "Đăng nhập thất bại!");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
     setLoading(true);
 
     try {
-      if (!form.email || !form.password) {
-        setError("Vui lòng nhập đầy đủ thông tin.");
-        setLoading(false);
-        return;
-      }
-
-      if (form.password.length < 6) {
-        setError("Mật khẩu phải có ít nhất 6 ký tự.");
-        setLoading(false);
-        return;
-      }
-
-      // MOCK LOGIN (giả lập API)
-      await new Promise((res) => setTimeout(res, 800));
-
-      const mockUser = {
-        name: form.email.split("@")[0],
-        email: form.email,
-        role: form.role,
-      };
-
-      localStorage.setItem("user", JSON.stringify(mockUser));
-      setUser(mockUser);
-
-      navigate(ROLE_LANDING[form.role] || "/", { replace: true });
+      const { user, landing } = await loginUseCase(form);
+      setUser(user);
+      const redirect = location.state?.from;
+      const go =
+        redirect &&
+        (user.role === "Customer" || user.role === "customer") &&
+        typeof redirect === "string"
+          ? redirect
+          : landing;
+      navigate(go, { replace: true });
     } catch (err) {
-      setError("Đăng nhập thất bại!");
+      setError(err?.message || "Đăng nhập thất bại!");
     } finally {
       setLoading(false);
     }
@@ -68,11 +120,10 @@ function LoginPage() {
   return (
     <div className="login-bg">
       <div className="login-container">
-        {/* LEFT */}
         <div className="login-left">
           <img
-            src="https://images.unsplash.com/photo-1588776814546-1ffcf47267a5"
-            alt="Login"
+            src="https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?w=1200&q=80"
+            alt="Interior Studio"
             className="login-img"
           />
           <div className="login-brand">Interior Studio</div>
@@ -81,13 +132,40 @@ function LoginPage() {
           </div>
         </div>
 
-        {/* RIGHT */}
         <div className="login-right">
           <div className="login-form-box">
             <h2>Đăng nhập</h2>
-            <p style={{ color: "var(--muted)", marginBottom: 4, fontSize: 14 }}>
-              Chào mừng trở lại Interior Studio
-            </p>
+            <p className="login-subtitle">Chào mừng trở lại Interior Studio</p>
+
+            <div className="mock-login-panel">
+              <p className="mock-login-title">Mock verify — chọn role để vào ngay</p>
+              <div className="mock-login-chips">
+                {MOCK_ACCOUNTS.map((acc) => (
+                  <button
+                    key={acc.role}
+                    type="button"
+                    className={
+                      form.role === acc.role
+                        ? "mock-chip is-active"
+                        : "mock-chip"
+                    }
+                    disabled={loading}
+                    title={`${acc.hint} · ${acc.email}`}
+                    onClick={() => loginWithAccount(acc)}
+                    onContextMenu={(e) => {
+                      e.preventDefault();
+                      applyMockAccount(acc);
+                    }}
+                  >
+                    {acc.label}
+                  </button>
+                ))}
+              </div>
+              <p className="mock-login-hint">
+                Mật khẩu chung: <code>123456</code> · click = đăng nhập · chuột
+                phải = chỉ điền form
+              </p>
+            </div>
 
             <form className="login-form" onSubmit={handleSubmit}>
               <input
@@ -96,28 +174,23 @@ function LoginPage() {
                 placeholder="Email"
                 value={form.email}
                 onChange={handleChange}
+                autoComplete="email"
               />
 
-              <div style={{ position: "relative", width: "100%" }}>
+              <div className="password-field">
                 <input
                   type={showPassword ? "text" : "password"}
                   name="password"
-                  placeholder="Password"
+                  placeholder="Mật khẩu"
                   value={form.password}
                   onChange={handleChange}
-                  style={{ width: "100%", paddingRight: 36 }}
+                  autoComplete="current-password"
                 />
-
-                <span
+                <button
+                  type="button"
+                  className="password-toggle"
                   onClick={() => setShowPassword((p) => !p)}
-                  style={{
-                    position: "absolute",
-                    right: 10,
-                    top: "50%",
-                    transform: "translateY(-50%)",
-                    cursor: "pointer",
-                    color: "#888",
-                  }}
+                  aria-label={showPassword ? "Ẩn mật khẩu" : "Hiện mật khẩu"}
                 >
                   <i
                     className={
@@ -126,25 +199,28 @@ function LoginPage() {
                         : "fa-regular fa-eye"
                     }
                   />
-                </span>
+                </button>
               </div>
 
               <select
                 name="role"
                 value={form.role}
-                onChange={handleChange}
+                onChange={(e) => {
+                  handleChange(e);
+                  const acc = MOCK_ACCOUNTS.find(
+                    (a) => a.role === e.target.value
+                  );
+                  if (acc) applyMockAccount(acc);
+                }}
                 aria-label="Vai trò đăng nhập"
               >
-                <option value="Customer">Khách hàng</option>
-                <option value="Sales">Nhân viên Kinh doanh</option>
-                <option value="Production">Nhân viên Sản xuất</option>
-                <option value="Manager">Quản lý</option>
-                <option value="Admin">Quản trị viên</option>
+                <option value={ROLES.CUSTOMER}>Khách hàng</option>
+                <option value={ROLES.SALES}>Nhân viên Kinh doanh</option>
+                <option value={ROLES.MANAGER}>Quản lý</option>
+                <option value={ROLES.ADMIN}>Quản trị viên</option>
               </select>
 
-              {error && (
-                <div style={{ color: "red", marginBottom: 10 }}>{error}</div>
-              )}
+              {error && <div className="form-error">{error}</div>}
 
               <button className="login-btn" disabled={loading}>
                 {loading ? "Đang đăng nhập..." : "Đăng nhập"}
@@ -155,18 +231,6 @@ function LoginPage() {
                 <span onClick={() => navigate("/register")}>Đăng ký ngay</span>
               </div>
             </form>
-
-            <div className="login-socials">
-              <a href="#">
-                <i className="fa-brands fa-facebook-f"></i>
-              </a>
-              <a href="#">
-                <i className="fa-brands fa-instagram"></i>
-              </a>
-              <a href="#">
-                <i className="fa-brands fa-twitter"></i>
-              </a>
-            </div>
           </div>
         </div>
       </div>

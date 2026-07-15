@@ -1,21 +1,27 @@
-import React, { useEffect, useState } from "react";
-import axios from "axios";
+import React, { useContext, useEffect, useState } from "react";
+import { userService } from "../../application/services";
+import UserContext from "../../contexts/UserContext";
+import { ROLE_LABEL, normalizeRole } from "../../domain/roles";
 import "../../styles/customer/profilePage.css";
+import { notifySuccess, notifyError, notifyInfo, notifyWarn } from "../../application/services/notify";
+
+const AVATAR_FALLBACK =
+  "data:image/svg+xml," +
+  encodeURIComponent(
+    `<svg xmlns="http://www.w3.org/2000/svg" width="160" height="160"><rect fill="#f0e6da" width="160" height="160"/><text x="50%" y="54%" text-anchor="middle" font-family="Georgia,serif" font-size="48" fill="#b0784f">IS</text></svg>`
+  );
 
 const ProfilePage = () => {
-  const [user, setUser] = useState(null);
-
+  const { user: sessionUser, setUser: setSessionUser } = useContext(UserContext);
   const [form, setForm] = useState({
     fullName: "",
+    email: "",
     phone: "",
     address: "",
   });
-
-  const [avatar, setAvatar] = useState(null);
   const [preview, setPreview] = useState("");
-
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     fetchProfile();
@@ -24,41 +30,21 @@ const ProfilePage = () => {
   const fetchProfile = async () => {
     try {
       setLoading(true);
-      setError("");
-
-      const res = await axios.get(
-        "https://localhost:5001/api/users/profile"
-      );
-
-      setUser(res.data);
+      const res = await userService.getProfile();
+      const d = res.data || {};
       setForm({
-        fullName: res.data.fullName || "",
-        phone: res.data.phone || "",
-        address: res.data.address || "",
+        fullName: d.fullName || d.name || sessionUser?.name || "",
+        email: d.email || sessionUser?.email || "",
+        phone: d.phone || "",
+        address: d.address || "",
       });
-
-      setPreview(res.data.avatar || "");
-    } catch (err) {
-      console.error(err);
-      // fallback to the logged-in user stored locally
-      let stored = null;
-      try {
-        stored = JSON.parse(localStorage.getItem("user"));
-      } catch {
-        stored = null;
-      }
-      const demo = {
-        fullName: stored?.name || "Khách hàng Interior Studio",
-        email: stored?.email || "guest@interiorstudio.com",
-        phone: "0900 000 000",
-        address: "TP. Hồ Chí Minh, Việt Nam",
-        avatar: "",
-      };
-      setUser(demo);
+      setPreview(d.avatar || d.avatarUrl || "");
+    } catch {
       setForm({
-        fullName: demo.fullName,
-        phone: demo.phone,
-        address: demo.address,
+        fullName: sessionUser?.name || "",
+        email: sessionUser?.email || "",
+        phone: sessionUser?.phone || "0901234567",
+        address: "12 Nguyễn Huệ, Q1, HCM",
       });
       setPreview("");
     } finally {
@@ -66,101 +52,98 @@ const ProfilePage = () => {
     }
   };
 
-  const handleChange = (e) => {
-    setForm({
-      ...form,
-      [e.target.name]: e.target.value,
-    });
-  };
-
   const handleAvatarChange = (e) => {
-    const file = e.target.files[0];
-    setAvatar(file);
-
-    if (file) {
-      setPreview(URL.createObjectURL(file));
-    }
+    const file = e.target.files?.[0];
+    if (file) setPreview(URL.createObjectURL(file));
   };
 
   const handleUpdate = async () => {
     try {
-      const formData = new FormData();
-      formData.append("fullName", form.fullName);
-      formData.append("phone", form.phone);
-      formData.append("address", form.address);
-
-      if (avatar) {
-        formData.append("avatar", avatar);
+      setSaving(true);
+      await userService.updateProfile({
+        name: form.fullName,
+        fullName: form.fullName,
+        phone: form.phone,
+        address: form.address,
+      });
+      if (sessionUser) {
+        const next = { ...sessionUser, name: form.fullName, phone: form.phone };
+        setSessionUser(next);
+        localStorage.setItem("user", JSON.stringify(next));
       }
-
-      await axios.put(
-        "https://localhost:5001/api/users/profile",
-        formData,
-        {
-          headers: {
-            "Content-Type": "multipart/form-data",
-          },
-        }
-      );
-
-      alert("Cập nhật thành công!");
-      fetchProfile();
-    } catch (err) {
-      console.error(err);
-      alert("Cập nhật thất bại");
+      notifySuccess("Đã lưu hồ sơ");
+    } catch {
+      notifyError("Cập nhật thất bại");
+    } finally {
+      setSaving(false);
     }
   };
 
+  const roleKey = sessionUser ? normalizeRole(sessionUser.role) : "customer";
+
   return (
-    <div className="profile-page">
-      <h2>My Profile</h2>
+    <div className="profile-page page">
+      <h2>Hồ sơ cá nhân</h2>
 
-      {loading && <p>Loading...</p>}
-      {error && <p className="error">{error}</p>}
+      {loading ? (
+        <p>Đang tải hồ sơ...</p>
+      ) : (
+        <div className="profile-layout">
+          <aside className="profile-aside">
+            <div className="profile-avatar-wrap">
+              <img
+                src={preview || AVATAR_FALLBACK}
+                alt="avatar"
+                onError={(e) => {
+                  e.currentTarget.src = AVATAR_FALLBACK;
+                }}
+              />
+            </div>
+            <label className="profile-upload-btn">
+              Đổi ảnh
+              <input type="file" accept="image/*" hidden onChange={handleAvatarChange} />
+            </label>
+            <div className="profile-role-pill">{ROLE_LABEL[roleKey]}</div>
+            <p className="profile-email">{form.email}</p>
+          </aside>
 
-      {!loading && user && (
-        <div className="profile-container">
-          {/* AVATAR */}
-          <div className="avatar-section">
-            <img
-              src={
-                preview ||
-                "https://via.placeholder.com/150"
-              }
-              alt="avatar"
-            />
-
-            <input
-              type="file"
-              onChange={handleAvatarChange}
-            />
-          </div>
-
-          {/* FORM */}
-          <div className="form-section">
-            <label>Full Name</label>
-            <input
-              name="fullName"
-              value={form.fullName}
-              onChange={handleChange}
-            />
-
-            <label>Phone</label>
-            <input
-              name="phone"
-              value={form.phone}
-              onChange={handleChange}
-            />
-
-            <label>Address</label>
-            <textarea
-              name="address"
-              value={form.address}
-              onChange={handleChange}
-            />
-
-            <button onClick={handleUpdate}>
-              Save Changes
+          <div className="profile-form card-like">
+            <div className="profile-field">
+              <label htmlFor="fullName">Họ và tên</label>
+              <input
+                id="fullName"
+                value={form.fullName}
+                onChange={(e) =>
+                  setForm({ ...form, fullName: e.target.value })
+                }
+              />
+            </div>
+            <div className="profile-field">
+              <label htmlFor="phone">Số điện thoại</label>
+              <input
+                id="phone"
+                value={form.phone}
+                onChange={(e) => setForm({ ...form, phone: e.target.value })}
+              />
+            </div>
+            <div className="profile-field">
+              <label htmlFor="address">Địa chỉ</label>
+              <textarea
+                id="address"
+                rows={3}
+                value={form.address}
+                onChange={(e) =>
+                  setForm({ ...form, address: e.target.value })
+                }
+              />
+            </div>
+            <button
+              type="button"
+              className="profile-save"
+              disabled={saving}
+              onClick={handleUpdate}
+            >
+              {saving ? "Đang lưu..." : "Lưu thay đổi"}
             </button>
           </div>
         </div>

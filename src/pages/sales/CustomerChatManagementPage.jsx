@@ -1,6 +1,5 @@
 import React, { useEffect, useState, useRef } from "react";
-import axios from "axios";
-import "../../styles/sales/customerChatManagementPage.css";
+import { chatService } from "../../application/services";
 
 const CustomerChatManagementPage = () => {
   const [customers, setCustomers] = useState([]);
@@ -9,134 +8,149 @@ const CustomerChatManagementPage = () => {
   const [input, setInput] = useState("");
   const chatEndRef = useRef(null);
 
-  // Load customers
   useEffect(() => {
     fetchCustomers();
   }, []);
 
   useEffect(() => {
-    if (selectedCustomer) {
-      fetchMessages(selectedCustomer.id);
-    }
+    if (selectedCustomer) fetchMessages(selectedCustomer.id);
   }, [selectedCustomer]);
 
   useEffect(() => {
-    scrollToBottom();
+    chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
   const fetchCustomers = async () => {
     try {
-      const res = await axios.get("/api/chat/customers");
+      const res = await chatService.getCustomers();
       setCustomers(res.data || []);
     } catch (err) {
-      console.error("Load customers error:", err);
+      console.error(err);
     }
   };
 
   const fetchMessages = async (customerId) => {
     try {
-      const res = await axios.get(`/api/chat/messages/${customerId}`);
+      const res = await chatService.getCustomerMessages(customerId);
       setMessages(res.data || []);
     } catch (err) {
-      console.error("Load messages error:", err);
+      console.error(err);
     }
   };
 
   const sendMessage = async () => {
     if (!input.trim() || !selectedCustomer) return;
-
+    const text = input.trim();
     const newMsg = {
       sender: "staff",
-      content: input,
+      content: text,
       time: new Date().toISOString(),
     };
-
     try {
-      // Optimistic UI
       setMessages((prev) => [...prev, newMsg]);
       setInput("");
-
-      await axios.post("/api/chat/send", {
+      await chatService.send({
         customerId: selectedCustomer.id,
-        content: input,
+        content: text,
       });
     } catch (err) {
-      console.error("Send message error:", err);
+      console.error(err);
     }
   };
 
-  const scrollToBottom = () => {
-    chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  };
-
   return (
-    <div className="chat-container">
-      {/* LEFT - CUSTOMER LIST */}
-      <div className="chat-sidebar">
-        <h3>Customers</h3>
-        <div className="customer-list">
-          {customers.map((c) => (
-            <div
-              key={c.id}
-              className={`customer-item ${
-                selectedCustomer?.id === c.id ? "active" : ""
-              }`}
-              onClick={() => setSelectedCustomer(c)}
-            >
-              <div className="avatar">{c.name?.charAt(0)}</div>
-              <div>
-                <div className="name">{c.name}</div>
-                <div className="email">{c.email}</div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
+    <div className="staff-page">
+      <h2>Chăm sóc khách</h2>
+      <p className="staff-page-sub">
+        Hội thoại với khách trên storefront — cùng tone Interior Studio.
+      </p>
 
-      {/* RIGHT - CHAT BOX */}
-      <div className="chat-box">
-        {selectedCustomer ? (
-          <>
-            {/* HEADER */}
-            <div className="chat-header">
-              <h3>{selectedCustomer.name}</h3>
-            </div>
-
-            {/* MESSAGES */}
-            <div className="chat-messages">
-              {messages.map((msg, index) => (
-                <div
-                  key={index}
-                  className={`message ${
-                    msg.sender === "staff" ? "right" : "left"
-                  }`}
-                >
-                  <div className="bubble">{msg.content}</div>
-                  <div className="time">
-                    {new Date(msg.time).toLocaleTimeString()}
-                  </div>
+      <div className="staff-chat">
+        <div className="staff-chat-list">
+          <div className="staff-chat-list-head">Khách hàng</div>
+          <div className="staff-chat-list-body">
+            {customers.map((c) => (
+              <button
+                key={c.id}
+                type="button"
+                className={
+                  selectedCustomer?.id === c.id
+                    ? "staff-chat-person is-active"
+                    : "staff-chat-person"
+                }
+                onClick={() => setSelectedCustomer(c)}
+              >
+                <span className="staff-chat-avatar">
+                  {(c.name || "?").charAt(0)}
+                </span>
+                <div>
+                  <strong>{c.name}</strong>
+                  <span>{c.email}</span>
                 </div>
-              ))}
-              <div ref={chatEndRef} />
-            </div>
-
-            {/* INPUT */}
-            <div className="chat-input">
-              <input
-                type="text"
-                placeholder="Type a message..."
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && sendMessage()}
-              />
-              <button onClick={sendMessage}>Send</button>
-            </div>
-          </>
-        ) : (
-          <div className="no-chat">
-            Select a customer to start chatting
+              </button>
+            ))}
+            {customers.length === 0 && (
+              <p className="staff-empty">Chưa có khách chat</p>
+            )}
           </div>
-        )}
+        </div>
+
+        <div className="staff-chat-main">
+          {selectedCustomer ? (
+            <>
+              <div className="staff-chat-header">{selectedCustomer.name}</div>
+              <div className="staff-chat-messages">
+                {messages.map((msg, index) => {
+                  const isStaff =
+                    msg.sender === "staff" ||
+                    msg.senderRole === "Sales" ||
+                    msg.senderRole === "staff";
+                  return (
+                    <div
+                      key={index}
+                      className={
+                        isStaff
+                          ? "staff-bubble is-staff"
+                          : "staff-bubble is-customer"
+                      }
+                    >
+                      <div>{msg.content || msg.message}</div>
+                      <div className="staff-bubble-time">
+                        {msg.time
+                          ? new Date(msg.time).toLocaleTimeString("vi-VN", {
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            })
+                          : ""}
+                      </div>
+                    </div>
+                  );
+                })}
+                <div ref={chatEndRef} />
+              </div>
+              <div className="staff-chat-compose">
+                <input
+                  type="text"
+                  placeholder="Nhập tin nhắn..."
+                  value={input}
+                  onChange={(e) => setInput(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && sendMessage()}
+                />
+                <button
+                  type="button"
+                  className="staff-btn staff-btn-primary"
+                  onClick={sendMessage}
+                >
+                  Gửi
+                </button>
+              </div>
+            </>
+          ) : (
+            <div className="staff-empty" style={{ margin: "auto" }}>
+              Chọn khách để bắt đầu chat
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

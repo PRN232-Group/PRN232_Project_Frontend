@@ -1,12 +1,16 @@
-import React, { useEffect, useState } from "react";
-import axios from "axios";
-import "../../styles/customer/checkoutPage.css";
+import React, { useContext, useEffect, useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { cartService, orderService } from "../../application/services";
+import UserContext from "../../contexts/UserContext";
+import { getLocalCart, setLocalCart } from "../../utils/cartLocal";
+import { notifySuccess, notifyError, notifyInfo, notifyWarn } from "../../application/services/notify";
 
 const CheckoutPage = () => {
+  const { user } = useContext(UserContext);
+  const navigate = useNavigate();
   const [cartItems, setCartItems] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
-
+  const [submitting, setSubmitting] = useState(false);
   const [form, setForm] = useState({
     fullName: "",
     phone: "",
@@ -16,156 +20,163 @@ const CheckoutPage = () => {
   });
 
   useEffect(() => {
+    if (!user) {
+      notifyInfo("Vui lòng đăng nhập để thanh toán");
+      navigate("/login", { state: { from: "/checkout" }, replace: true });
+      return;
+    }
+    setForm((f) => ({
+      ...f,
+      fullName: user.name || f.fullName,
+      phone: user.phone || f.phone,
+    }));
     fetchCart();
-  }, []);
+  }, [user]);
 
   const fetchCart = async () => {
     try {
       setLoading(true);
-      setError("");
-
-      const res = await axios.get("https://localhost:5001/api/cart");
-      setCartItems(res.data || []);
-    } catch (err) {
-      console.error(err);
-      setError("Không thể tải giỏ hàng");
-
-      const localCart = JSON.parse(localStorage.getItem("cart")) || [];
-      setCartItems(localCart);
+      try {
+        const res = await cartService.get();
+        const items = (res.data || []).map((i) => ({
+          ...i,
+          name: i.name || i.productName,
+          price: i.price ?? i.unitPrice ?? 0,
+        }));
+        if (items.length) {
+          setCartItems(items);
+          return;
+        }
+      } catch {
+        /* local */
+      }
+      setCartItems(getLocalCart());
     } finally {
       setLoading(false);
     }
   };
 
-  const handleChange = (e) => {
-    setForm({
-      ...form,
-      [e.target.name]: e.target.value,
-    });
-  };
-
-  const getTotal = () => {
-    return cartItems.reduce(
-      (sum, item) => sum + item.price * item.quantity,
+  const getTotal = () =>
+    cartItems.reduce(
+      (sum, item) => sum + Number(item.price || 0) * Number(item.quantity || 0),
       0
     );
-  };
-
-  const validateForm = () => {
-    if (!form.fullName || !form.phone || !form.address) {
-      alert("Vui lòng nhập đầy đủ thông tin");
-      return false;
-    }
-    return true;
-  };
 
   const handleCheckout = async () => {
-    if (!validateForm()) return;
-
+    if (!form.fullName || !form.phone || !form.address) {
+      notifyWarn("Vui lòng nhập đầy đủ thông tin giao hàng");
+      return;
+    }
+    if (!cartItems.length) {
+      notifyWarn("Giỏ hàng trống");
+      return;
+    }
     try {
-      setLoading(true);
-
-      const orderData = {
+      setSubmitting(true);
+      await orderService.checkout({
+        shippingAddress: form.address,
+        phone: form.phone,
+        note: form.note,
         customerInfo: form,
         items: cartItems,
         totalPrice: getTotal(),
-      };
-
-      await axios.post(
-        "https://localhost:5001/api/orders/checkout",
-        orderData
-      );
-
-      alert("Đặt hàng thành công!");
-
+      });
+      setLocalCart([]);
       setCartItems([]);
-      localStorage.removeItem("cart");
+      notifySuccess("Đặt hàng thành công! Giỏ hàng đã được làm trống.");
+      navigate("/orders", { replace: true });
     } catch (err) {
       console.error(err);
-      alert("Thanh toán thất bại");
+      notifyError("Thanh toán thất bại");
     } finally {
-      setLoading(false);
+      setSubmitting(false);
     }
   };
 
+  if (!user) return null;
+
   return (
-    <div className="checkout-page">
-      <h2>Checkout</h2>
+    <div className="checkout-page page">
+      <h2>Thanh toán</h2>
 
-      {loading && <p>Loading...</p>}
-      {error && <p className="error">{error}</p>}
+      {loading && <p>Đang tải...</p>}
 
-      {!loading && !error && (
+      {!loading && cartItems.length === 0 && (
+        <div className="empty-cart-panel">
+          <p className="empty-cart-title">Không có sản phẩm để thanh toán</p>
+          <Link to="/products" className="checkout-btn">
+            Quay lại mua sắm
+          </Link>
+        </div>
+      )}
+
+      {!loading && cartItems.length > 0 && (
         <div className="checkout-container">
-          {/* LEFT - FORM */}
-          <div className="checkout-form">
+          <div className="checkout-form field">
             <h3>Thông tin giao hàng</h3>
-
+            <label>Họ tên</label>
             <input
-              type="text"
               name="fullName"
-              placeholder="Họ tên"
               value={form.fullName}
-              onChange={handleChange}
+              onChange={(e) =>
+                setForm({ ...form, fullName: e.target.value })
+              }
             />
-
+            <label>Số điện thoại</label>
             <input
-              type="text"
               name="phone"
-              placeholder="Số điện thoại"
               value={form.phone}
-              onChange={handleChange}
+              onChange={(e) => setForm({ ...form, phone: e.target.value })}
             />
-
+            <label>Địa chỉ</label>
             <textarea
               name="address"
-              placeholder="Địa chỉ"
+              rows={3}
               value={form.address}
-              onChange={handleChange}
+              onChange={(e) =>
+                setForm({ ...form, address: e.target.value })
+              }
             />
-
+            <label>Ghi chú</label>
             <textarea
               name="note"
-              placeholder="Ghi chú (tuỳ chọn)"
+              rows={2}
               value={form.note}
-              onChange={handleChange}
+              onChange={(e) => setForm({ ...form, note: e.target.value })}
             />
-
-            <select
-              name="paymentMethod"
-              value={form.paymentMethod}
-              onChange={handleChange}
-            >
-              <option value="COD">Thanh toán khi nhận hàng</option>
-              <option value="BANK">Chuyển khoản ngân hàng</option>
-            </select>
           </div>
 
-          {/* RIGHT - ORDER SUMMARY */}
           <div className="checkout-summary">
             <h3>Đơn hàng</h3>
-
-            {cartItems.map((item) => (
-              <div key={item.id} className="summary-item">
-                <span>
-                  {item.name} x {item.quantity}
-                </span>
-                <span>
-                  {(item.price * item.quantity).toLocaleString()} đ
-                </span>
-              </div>
-            ))}
-
-            <hr />
-
-            <h3>Total: {getTotal().toLocaleString()} đ</h3>
-
+            <ul className="checkout-items">
+              {cartItems.map((item) => (
+                <li key={item.id}>
+                  <span>
+                    {item.name || item.productName} × {item.quantity}
+                  </span>
+                  <strong>
+                    {(
+                      Number(item.price || 0) * Number(item.quantity || 0)
+                    ).toLocaleString("vi-VN")}{" "}
+                    ₫
+                  </strong>
+                </li>
+              ))}
+            </ul>
+            <p className="checkout-total">
+              Tổng: <b>{getTotal().toLocaleString("vi-VN")} ₫</b>
+            </p>
+            <p className="checkout-hint">
+              Sau khi đặt thành công, giỏ hàng sẽ trống — xem đơn tại mục Đơn
+              hàng.
+            </p>
             <button
+              type="button"
               className="checkout-btn"
+              disabled={submitting}
               onClick={handleCheckout}
-              disabled={loading}
             >
-              Place Order
+              {submitting ? "Đang xử lý..." : "Xác nhận đặt hàng"}
             </button>
           </div>
         </div>

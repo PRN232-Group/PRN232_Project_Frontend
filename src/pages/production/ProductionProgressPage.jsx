@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from "react";
-import axios from "axios";
-import "../../styles/production/productionProgressPage.css";
+import { productionService } from "../../application/services";
 
 const ProductionProgressPage = () => {
   const [orders, setOrders] = useState([]);
@@ -15,9 +14,7 @@ const ProductionProgressPage = () => {
       setLoading(true);
 
       // TODO: đổi API backend
-      const res = await axios.get(
-        "http://localhost:5000/api/production/progress"
-      );
+      const res = await productionService.getProgress();
 
       setOrders(res.data || []);
     } catch (error) {

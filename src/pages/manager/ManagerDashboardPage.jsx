@@ -1,20 +1,17 @@
 import React, { useEffect, useState } from "react";
-import axios from "axios";
 import { useNavigate } from "react-router-dom";
-import "../../styles/manager/managerDashboardPage.css";
+import { analyticsService } from "../../application/services";
+import { formatVnd } from "../../domain/roles";
 
 const ManagerDashboardPage = () => {
   const navigate = useNavigate();
-
   const [stats, setStats] = useState({
     totalUsers: 0,
     totalOrders: 0,
     totalRevenue: 0,
     bestSellingProduct: "",
   });
-
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
 
   useEffect(() => {
     fetchDashboard();
@@ -23,23 +20,20 @@ const ManagerDashboardPage = () => {
   const fetchDashboard = async () => {
     try {
       setLoading(true);
-      setError("");
-
-      const res = await axios.get(
-        "https://localhost:5001/api/analytics/dashboard"
-      );
-
-      setStats(res.data);
-    } catch (err) {
-      console.error(err);
-      setError("Không thể tải dashboard dữ liệu");
-
-      // fallback demo data
+      const res = await analyticsService.getManagerDashboard();
+      const d = res.data || {};
       setStats({
-        totalUsers: 120,
-        totalOrders: 58,
-        totalRevenue: 125000000,
-        bestSellingProduct: "Modern Sofa",
+        totalUsers: d.totalUsers ?? d.totalCustomers ?? 0,
+        totalOrders: d.totalOrders ?? 0,
+        totalRevenue: d.totalRevenue ?? 0,
+        bestSellingProduct: d.bestSellingProduct || "",
+      });
+    } catch {
+      setStats({
+        totalUsers: 0,
+        totalOrders: 0,
+        totalRevenue: 0,
+        bestSellingProduct: "—",
       });
     } finally {
       setLoading(false);
@@ -47,57 +41,71 @@ const ManagerDashboardPage = () => {
   };
 
   return (
-    <div className="manager-dashboard">
-      <h2>Manager Dashboard</h2>
+    <div className="staff-page">
+      <h2>Quản lý — Tổng quan</h2>
+      <p className="staff-page-sub">
+        Catalog, danh mục, giá/giảm giá, tồn kho và doanh thu. Đơn hàng do Sales
+        phụ trách.
+      </p>
 
-      {loading && <p>Loading dashboard...</p>}
-      {error && <p className="error">{error}</p>}
+      {loading && <p className="staff-status">Đang tải...</p>}
 
-      {!loading && (
-        <>
-          {/* KPI CARDS */}
-          <div className="grid">
-            <div className="card">
-              <h3>Users</h3>
-              <p>{stats.totalUsers}</p>
-            </div>
+      <div className="staff-kpi-grid">
+        <div className="staff-kpi">
+          <span>Người dùng</span>
+          <strong>{stats.totalUsers}</strong>
+        </div>
+        <div className="staff-kpi">
+          <span>Đơn hàng</span>
+          <strong>{stats.totalOrders}</strong>
+        </div>
+        <div className="staff-kpi">
+          <span>Doanh thu</span>
+          <strong className="is-clay">{formatVnd(stats.totalRevenue)}</strong>
+        </div>
+        <div className="staff-kpi">
+          <span>Bán chạy</span>
+          <strong style={{ fontSize: "1rem" }}>{stats.bestSellingProduct}</strong>
+        </div>
+      </div>
 
-            <div className="card">
-              <h3>Orders</h3>
-              <p>{stats.totalOrders}</p>
-            </div>
-
-            <div className="card">
-              <h3>Revenue</h3>
-              <p>{stats.totalRevenue.toLocaleString()} đ</p>
-            </div>
-
-            <div className="card">
-              <h3>Best Seller</h3>
-              <p>{stats.bestSellingProduct}</p>
-            </div>
-          </div>
-
-          {/* QUICK ACTIONS */}
-          <div className="actions">
-            <button onClick={() => navigate("/manager/products")}>
-              Quản lý sản phẩm
-            </button>
-
-            <button onClick={() => navigate("/manager/orders")}>
-              Quản lý đơn hàng
-            </button>
-
-            <button onClick={() => navigate("/manager/best-selling")}>
-              Sản phẩm bán chạy
-            </button>
-
-            <button onClick={() => navigate("/manager/revenue")}>
-              Báo cáo doanh thu
-            </button>
-          </div>
-        </>
-      )}
+      <div className="staff-toolbar">
+        <button
+          type="button"
+          className="staff-btn staff-btn-primary"
+          onClick={() => navigate("/manager/products")}
+        >
+          Sản phẩm &amp; thông số
+        </button>
+        <button
+          type="button"
+          className="staff-btn staff-btn-ghost"
+          onClick={() => navigate("/manager/designs")}
+        >
+          Concept thiết kế
+        </button>
+        <button
+          type="button"
+          className="staff-btn staff-btn-ghost"
+          onClick={() => navigate("/manager/categories")}
+        >
+          Danh mục
+        </button>
+        <button
+          type="button"
+          className="staff-btn staff-btn-ghost"
+          onClick={() => navigate("/manager/prices")}
+        >
+          Bảng giá / giảm giá
+        </button>
+        <button
+          type="button"
+          className="staff-btn staff-btn-ghost"
+          onClick={() => navigate("/manager/revenue")}
+        >
+          Doanh thu
+        </button>
+      </div>
     </div>
   );
 };

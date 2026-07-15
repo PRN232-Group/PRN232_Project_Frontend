@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from "react";
-import axios from "axios";
 import { useParams } from "react-router-dom";
-import "../../styles/customer/orderDetailPage.css";
+import { orderService } from "../../application/services";
 
 const OrderDetailPage = () => {
   const { id } = useParams();
@@ -19,9 +18,7 @@ const OrderDetailPage = () => {
       setLoading(true);
       setError("");
 
-      const res = await axios.get(
-        `https://localhost:5001/api/orders/${id}`
-      );
+      const res = await orderService.getById(id);
 
       setOrder(res.data);
     } catch (err) {

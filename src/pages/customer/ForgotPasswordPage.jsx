@@ -1,6 +1,5 @@
 import React, { useState } from "react";
-import axios from "axios";
-import "../../styles/customer/forgotPasswordPage.css";
+import { forgotPassword } from "../../application/services/authService";
 
 const ForgotPasswordPage = () => {
   const [email, setEmail] = useState("");
@@ -21,10 +20,7 @@ const ForgotPasswordPage = () => {
       setError("");
       setMessage("");
 
-      await axios.post(
-        "https://localhost:5001/api/auth/forgot-password",
-        { email }
-      );
+      await forgotPassword(email);
 
       setMessage("Vui lòng kiểm tra email để đặt lại mật khẩu");
       setEmail("");

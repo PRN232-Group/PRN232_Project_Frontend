@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
-import axios from "axios";
 import { useParams } from "react-router-dom";
-import "../../styles/customer/productReviewPage.css";
+import { reviewService } from "../../application/services";
+import { notifySuccess, notifyError, notifyInfo, notifyWarn } from "../../application/services/notify";
 
 const ProductReviewPage = () => {
   const { id } = useParams(); // productId
@@ -22,9 +22,7 @@ const ProductReviewPage = () => {
       setLoading(true);
       setError("");
 
-      const res = await axios.get(
-        `https://localhost:5001/api/products/${id}/reviews`
-      );
+      const res = await reviewService.getByProduct(id);
 
       setReviews(res.data || []);
     } catch (err) {
@@ -47,7 +45,7 @@ const ProductReviewPage = () => {
 
   const submitReview = async () => {
     if (!comment.trim()) {
-      alert("Vui lòng nhập nội dung review");
+      notifyWarn("Vui lòng nhập nội dung review");
       return;
     }
 
@@ -58,9 +56,7 @@ const ProductReviewPage = () => {
         comment,
       };
 
-      await axios.post(
-        `https://localhost:5001/api/products/${id}/reviews`,
-        newReview
+      await reviewService.create(id, newReview
       );
 
       setComment("");
@@ -69,7 +65,7 @@ const ProductReviewPage = () => {
       fetchReviews();
     } catch (err) {
       console.error(err);
-      alert("Gửi đánh giá thất bại");
+      notifyError("Gửi đánh giá thất bại");
     }
   };
 

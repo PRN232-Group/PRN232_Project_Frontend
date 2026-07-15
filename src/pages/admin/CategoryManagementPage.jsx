@@ -1,24 +1,21 @@
 import React, { useEffect, useState } from "react";
-import { Table, Button, Modal, Form, Input, Space, message } from "antd";
-import axios from "axios";
+import { Modal, Form, Input, message } from "antd";
+import { categoryService } from "../../application/services";
 
 const CategoryManagementPage = () => {
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(false);
-
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editingCategory, setEditingCategory] = useState(null);
-
+  const [editing, setEditing] = useState(null);
   const [form] = Form.useForm();
 
-  // Fetch categories
   const fetchCategories = async () => {
     try {
       setLoading(true);
-      const res = await axios.get("/api/categories");
-      setCategories(res.data);
-    } catch (err) {
-      message.error("Failed to load categories");
+      const res = await categoryService.getAll();
+      setCategories(res.data || []);
+    } catch {
+      message.error("Không tải được danh mục");
     } finally {
       setLoading(false);
     }
@@ -28,125 +25,131 @@ const CategoryManagementPage = () => {
     fetchCategories();
   }, []);
 
-  // Open modal
   const openModal = (category = null) => {
-    setEditingCategory(category);
+    setEditing(category);
     setIsModalOpen(true);
-
-    if (category) {
-      form.setFieldsValue({
-        name: category.name,
-        description: category.description,
-      });
-    } else {
-      form.resetFields();
-    }
+    if (category) form.setFieldsValue(category);
+    else form.resetFields();
   };
 
-  // Close modal
-  const handleClose = () => {
-    setIsModalOpen(false);
-    setEditingCategory(null);
-    form.resetFields();
-  };
-
-  // Submit form (create/update)
   const handleSubmit = async (values) => {
     try {
-      if (editingCategory) {
-        await axios.put(`/api/categories/${editingCategory.id}`, values);
-        message.success("Category updated successfully");
+      if (editing) {
+        await categoryService.update(editing.id, values);
+        message.success("Đã cập nhật danh mục");
       } else {
-        await axios.post("/api/categories", values);
-        message.success("Category created successfully");
+        await categoryService.create(values);
+        message.success("Đã thêm danh mục");
       }
-
-      handleClose();
+      setIsModalOpen(false);
       fetchCategories();
-    } catch (err) {
-      message.error("Operation failed");
+    } catch {
+      message.error("Thao tác thất bại");
     }
   };
 
-  // Delete category
   const handleDelete = async (id) => {
+    if (!window.confirm("Xóa danh mục này?")) return;
     try {
-      await axios.delete(`/api/categories/${id}`);
-      message.success("Category deleted");
+      await categoryService.remove(id);
+      message.success("Đã xóa");
       fetchCategories();
-    } catch (err) {
-      message.error("Delete failed");
+    } catch {
+      message.error("Xóa thất bại");
     }
   };
-
-  const columns = [
-    {
-      title: "ID",
-      dataIndex: "id",
-      key: "id",
-    },
-    {
-      title: "Name",
-      dataIndex: "name",
-      key: "name",
-    },
-    {
-      title: "Description",
-      dataIndex: "description",
-      key: "description",
-    },
-    {
-      title: "Actions",
-      key: "actions",
-      render: (_, record) => (
-        <Space>
-          <Button type="primary" onClick={() => openModal(record)}>
-            Edit
-          </Button>
-          <Button danger onClick={() => handleDelete(record.id)}>
-            Delete
-          </Button>
-        </Space>
-      ),
-    },
-  ];
 
   return (
-    <div style={{ padding: 20 }}>
-      <h2>Category Management</h2>
+    <div className="staff-page">
+      <h2>Danh mục sản phẩm</h2>
+      <p className="staff-page-sub">
+        Sofa, Bàn, Ghế… — dùng chung với bộ lọc storefront.
+      </p>
 
-      <Button type="primary" onClick={() => openModal()}>
-        + Add Category
-      </Button>
+      <div className="staff-toolbar">
+        <button
+          type="button"
+          className="staff-btn staff-btn-primary"
+          onClick={() => openModal()}
+        >
+          + Thêm danh mục
+        </button>
+        <button
+          type="button"
+          className="staff-btn staff-btn-ghost"
+          onClick={fetchCategories}
+        >
+          Tải lại
+        </button>
+      </div>
 
-      <Table
-        style={{ marginTop: 16 }}
-        columns={columns}
-        dataSource={categories}
-        rowKey="id"
-        loading={loading}
-      />
+      <div className="staff-panel">
+        <table className="staff-table">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Tên</th>
+              <th>Mô tả</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            {loading ? (
+              <tr>
+                <td colSpan={4} className="staff-empty">
+                  Đang tải...
+                </td>
+              </tr>
+            ) : (
+              categories.map((c) => (
+                <tr key={c.id}>
+                  <td>#{c.id}</td>
+                  <td>
+                    <strong>{c.name}</strong>
+                  </td>
+                  <td style={{ color: "var(--muted)" }}>{c.description}</td>
+                  <td>
+                    <div className="staff-actions">
+                      <button
+                        type="button"
+                        className="staff-btn staff-btn-ghost"
+                        onClick={() => openModal(c)}
+                      >
+                        Sửa
+                      </button>
+                      <button
+                        type="button"
+                        className="staff-btn staff-btn-danger"
+                        onClick={() => handleDelete(c.id)}
+                      >
+                        Xóa
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+      </div>
 
       <Modal
-        title={editingCategory ? "Edit Category" : "Add Category"}
+        title={editing ? "Sửa danh mục" : "Thêm danh mục"}
         open={isModalOpen}
-        onCancel={handleClose}
+        onCancel={() => setIsModalOpen(false)}
         onOk={() => form.submit()}
-        okText="Save"
+        okText="Lưu"
+        cancelText="Hủy"
       >
         <Form form={form} layout="vertical" onFinish={handleSubmit}>
           <Form.Item
-            label="Name"
+            label="Tên"
             name="name"
-            rules={[{ required: true, message: "Please enter category name" }]}
+            rules={[{ required: true, message: "Nhập tên danh mục" }]}
           >
             <Input />
           </Form.Item>
-
-          <Form.Item
-            label="Description"
-            name="description"
-          >
+          <Form.Item label="Mô tả" name="description">
             <Input.TextArea rows={3} />
           </Form.Item>
         </Form>

@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from "react";
-import axios from "axios";
 import { useNavigate } from "react-router-dom";
-import "../../styles/customer/orderListPage.css";
+import { orderService } from "../../application/services";
 
 const OrderListPage = () => {
   const navigate = useNavigate();
@@ -25,9 +24,7 @@ const OrderListPage = () => {
       setLoading(true);
       setError("");
 
-      const res = await axios.get(
-        "https://localhost:5001/api/orders"
-      );
+      const res = await orderService.getAll();
 
       setOrders(res.data || []);
     } catch (err) {
@@ -93,14 +90,13 @@ const OrderListPage = () => {
   };
 
   return (
-    <div className="order-list-page">
-      <h2>My Orders</h2>
+    <div className="order-list-page page">
+      <h2>Đơn hàng của tôi</h2>
 
-      {/* SEARCH */}
       <div className="toolbar">
         <input
           type="text"
-          placeholder="Search by order ID or status..."
+          placeholder="Tìm theo mã đơn hoặc trạng thái..."
           value={search}
           onChange={(e) => {
             setSearch(e.target.value);
@@ -108,83 +104,73 @@ const OrderListPage = () => {
           }}
         />
 
-        <button onClick={fetchOrders}>Reload</button>
+        <button type="button" onClick={fetchOrders}>
+          Tải lại
+        </button>
       </div>
 
-      {/* CONTENT */}
-      {loading && <p>Loading orders...</p>}
+      {loading && <p>Đang tải đơn hàng...</p>}
       {error && <p className="error">{error}</p>}
 
       {!loading && !error && (
         <>
-          <table className="order-table">
-            <thead>
-              <tr>
-                <th>ID</th>
-                <th>Total Items</th>
-                <th>Status</th>
-                <th>Total Price</th>
-                <th>Action</th>
-              </tr>
-            </thead>
-
-            <tbody>
-              {currentOrders.length > 0 ? (
-                currentOrders.map((order) => (
-                  <tr key={order.id}>
-                    <td>#{order.id}</td>
-
-                    <td>{order.items?.length || 0}</td>
-
-                    <td>
-                      <span
-                        className={`status ${getStatusClass(
-                          order.status
-                        )}`}
-                      >
-                        {order.status}
-                      </span>
-                    </td>
-
-                    <td>
-                      {order.totalPrice
-                        ? order.totalPrice.toLocaleString()
-                        : 0}{" "}
-                      đ
-                    </td>
-
-                    <td>
-                      <button
-                        className="view-btn"
-                        onClick={() =>
-                          navigate(`/orders/${order.id}`)
-                        }
-                      >
-                        View
-                      </button>
-                    </td>
-                  </tr>
-                ))
-              ) : (
+          <div style={{ overflowX: "auto" }}>
+            <table className="order-table">
+              <thead>
                 <tr>
-                  <td colSpan="5">No orders found</td>
+                  <th>Mã</th>
+                  <th>Số SP</th>
+                  <th>Trạng thái</th>
+                  <th>Tổng tiền</th>
+                  <th></th>
                 </tr>
-              )}
-            </tbody>
-          </table>
+              </thead>
 
-          {/* PAGINATION */}
+              <tbody>
+                {currentOrders.length > 0 ? (
+                  currentOrders.map((order) => (
+                    <tr key={order.id}>
+                      <td>#{order.id}</td>
+                      <td>{order.items?.length || 0}</td>
+                      <td>
+                        <span
+                          className={`status ${getStatusClass(order.status)}`}
+                        >
+                          {order.status}
+                        </span>
+                      </td>
+                      <td>
+                        {Number(order.totalPrice || 0).toLocaleString("vi-VN")} ₫
+                      </td>
+                      <td>
+                        <button
+                          type="button"
+                          className="view-btn btn-ghost"
+                          onClick={() => navigate(`/orders/${order.id}`)}
+                        >
+                          Chi tiết
+                        </button>
+                      </td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan="5">Chưa có đơn hàng</td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+
           <div className="pagination">
-            <button onClick={() => changePage(currentPage - 1)}>
-              Prev
+            <button type="button" onClick={() => changePage(currentPage - 1)}>
+              Trước
             </button>
-
             <span>
-              Page {currentPage} / {totalPages || 1}
+              Trang {currentPage} / {totalPages || 1}
             </span>
-
-            <button onClick={() => changePage(currentPage + 1)}>
-              Next
+            <button type="button" onClick={() => changePage(currentPage + 1)}>
+              Sau
             </button>
           </div>
         </>

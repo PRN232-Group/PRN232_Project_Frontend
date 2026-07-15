@@ -1,24 +1,21 @@
 import React, { useEffect, useState } from "react";
-import { Table, Button, Modal, Form, Input, Space, message } from "antd";
-import axios from "axios";
+import { Modal, Form, Input, Select, Switch, message } from "antd";
+import { contentService } from "../../application/services";
 
 const ContentManagementPage = () => {
   const [contents, setContents] = useState([]);
   const [loading, setLoading] = useState(false);
-
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editingContent, setEditingContent] = useState(null);
-
+  const [editing, setEditing] = useState(null);
   const [form] = Form.useForm();
 
-  // GET all content
   const fetchContents = async () => {
     try {
       setLoading(true);
-      const res = await axios.get("/api/contents");
-      setContents(res.data);
-    } catch (err) {
-      message.error("Failed to load content");
+      const res = await contentService.getAll();
+      setContents(res.data || []);
+    } catch {
+      message.error("Không tải được nội dung");
     } finally {
       setLoading(false);
     }
@@ -28,137 +25,206 @@ const ContentManagementPage = () => {
     fetchContents();
   }, []);
 
-  // Open modal
   const openModal = (content = null) => {
-    setEditingContent(content);
+    setEditing(content);
     setIsModalOpen(true);
-
     if (content) {
       form.setFieldsValue({
         title: content.title,
-        description: content.description,
+        slug: content.slug,
+        type: content.type || "Blog",
         body: content.body,
+        coverUrl: content.coverUrl,
+        isPublished: content.isPublished !== false,
       });
     } else {
       form.resetFields();
+      form.setFieldsValue({ type: "Blog", isPublished: true });
     }
   };
 
-  // Close modal
-  const handleClose = () => {
-    setIsModalOpen(false);
-    setEditingContent(null);
-    form.resetFields();
-  };
-
-  // Submit create/update
   const handleSubmit = async (values) => {
     try {
-      if (editingContent) {
-        await axios.put(`/api/contents/${editingContent.id}`, values);
-        message.success("Content updated successfully");
+      const body = {
+        ...values,
+        publishedAt: values.isPublished
+          ? new Date().toISOString()
+          : null,
+      };
+      if (editing) {
+        await contentService.update(editing.id, body);
+        message.success("Đã cập nhật bài viết");
       } else {
-        await axios.post("/api/contents", values);
-        message.success("Content created successfully");
+        await contentService.create(body);
+        message.success("Đã thêm nội dung");
       }
-
-      handleClose();
+      setIsModalOpen(false);
       fetchContents();
-    } catch (err) {
-      message.error("Operation failed");
+    } catch {
+      message.error("Thao tác thất bại");
     }
   };
 
-  // Delete content
   const handleDelete = async (id) => {
+    if (!window.confirm("Xóa nội dung này?")) return;
     try {
-      await axios.delete(`/api/contents/${id}`);
-      message.success("Content deleted");
+      await contentService.remove(id);
+      message.success("Đã xóa");
       fetchContents();
-    } catch (err) {
-      message.error("Delete failed");
+    } catch {
+      message.error("Xóa thất bại");
     }
   };
-
-  const columns = [
-    {
-      title: "ID",
-      dataIndex: "id",
-      key: "id",
-      width: 80,
-    },
-    {
-      title: "Title",
-      dataIndex: "title",
-      key: "title",
-    },
-    {
-      title: "Description",
-      dataIndex: "description",
-      key: "description",
-    },
-    {
-      title: "Actions",
-      key: "actions",
-      render: (_, record) => (
-        <Space>
-          <Button type="primary" onClick={() => openModal(record)}>
-            Edit
-          </Button>
-          <Button danger onClick={() => handleDelete(record.id)}>
-            Delete
-          </Button>
-        </Space>
-      ),
-    },
-  ];
 
   return (
-    <div style={{ padding: 20 }}>
-      <h2>Content Management</h2>
+    <div className="staff-page">
+      <h2>Nội dung / Blog</h2>
+      <p className="staff-page-sub">
+        Bài viết có ảnh cover — khớp mock contents trên storefront.
+      </p>
 
-      <Button type="primary" onClick={() => openModal()}>
-        + Add Content
-      </Button>
+      <div className="staff-toolbar">
+        <button
+          type="button"
+          className="staff-btn staff-btn-primary"
+          onClick={() => openModal()}
+        >
+          + Thêm bài
+        </button>
+        <button
+          type="button"
+          className="staff-btn staff-btn-ghost"
+          onClick={fetchContents}
+        >
+          Tải lại
+        </button>
+      </div>
 
-      <Table
-        style={{ marginTop: 16 }}
-        columns={columns}
-        dataSource={contents}
-        rowKey="id"
-        loading={loading}
-      />
+      <div className="staff-panel">
+        <table className="staff-table">
+          <thead>
+            <tr>
+              <th>Bài viết</th>
+              <th>Loại</th>
+              <th>Slug</th>
+              <th>Xuất bản</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            {loading ? (
+              <tr>
+                <td colSpan={5} className="staff-empty">
+                  Đang tải...
+                </td>
+              </tr>
+            ) : (
+              contents.map((c) => (
+                <tr key={c.id}>
+                  <td>
+                    <div className="staff-product-cell">
+                      {c.coverUrl && <img src={c.coverUrl} alt="" />}
+                      <div>
+                        <h4>{c.title}</h4>
+                        <p>
+                          {(c.body || "")
+                            .replace(/<[^>]+>/g, "")
+                            .slice(0, 60)}
+                          …
+                        </p>
+                      </div>
+                    </div>
+                  </td>
+                  <td>
+                    <span className="staff-badge is-active">{c.type}</span>
+                  </td>
+                  <td style={{ color: "var(--muted)", fontSize: 13 }}>
+                    {c.slug}
+                  </td>
+                  <td>
+                    {c.isPublished ? (
+                      <span className="staff-badge is-done">Đã xuất bản</span>
+                    ) : (
+                      <span className="staff-badge is-off">Nháp</span>
+                    )}
+                  </td>
+                  <td>
+                    <div className="staff-actions">
+                      <button
+                        type="button"
+                        className="staff-btn staff-btn-ghost"
+                        onClick={() => openModal(c)}
+                      >
+                        Sửa
+                      </button>
+                      <button
+                        type="button"
+                        className="staff-btn staff-btn-danger"
+                        onClick={() => handleDelete(c.id)}
+                      >
+                        Xóa
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))
+            )}
+            {!loading && contents.length === 0 && (
+              <tr>
+                <td colSpan={5} className="staff-empty">
+                  Chưa có nội dung
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
 
       <Modal
-        title={editingContent ? "Edit Content" : "Add Content"}
+        title={editing ? "Sửa nội dung" : "Thêm nội dung"}
         open={isModalOpen}
-        onCancel={handleClose}
+        onCancel={() => setIsModalOpen(false)}
         onOk={() => form.submit()}
-        okText="Save"
-        width={800}
+        okText="Lưu"
+        cancelText="Hủy"
+        width={720}
       >
         <Form form={form} layout="vertical" onFinish={handleSubmit}>
           <Form.Item
-            label="Title"
+            label="Tiêu đề"
             name="title"
-            rules={[{ required: true, message: "Please enter title" }]}
+            rules={[{ required: true }]}
           >
             <Input />
           </Form.Item>
-
-          <Form.Item
-            label="Description"
-            name="description"
-          >
-            <Input.TextArea rows={2} />
+          <Form.Item label="Slug" name="slug">
+            <Input placeholder="xu-huong-2026" />
           </Form.Item>
-
+          <Form.Item label="Loại" name="type">
+            <Select
+              options={[
+                { value: "Blog", label: "Blog" },
+                { value: "Guide", label: "Guide" },
+                { value: "News", label: "News" },
+              ]}
+            />
+          </Form.Item>
+          <Form.Item label="Cover URL" name="coverUrl">
+            <Input />
+          </Form.Item>
           <Form.Item
-            label="Body"
+            label="Nội dung"
             name="body"
-            rules={[{ required: true, message: "Please enter content body" }]}
+            rules={[{ required: true }]}
           >
             <Input.TextArea rows={6} />
+          </Form.Item>
+          <Form.Item
+            label="Xuất bản"
+            name="isPublished"
+            valuePropName="checked"
+          >
+            <Switch />
           </Form.Item>
         </Form>
       </Modal>

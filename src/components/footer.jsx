@@ -1,70 +1,109 @@
-import React from "react";
+import React, { useContext } from "react";
+import { Link } from "react-router-dom";
 import "../styles/footer.css";
 import "@fortawesome/fontawesome-free/css/all.min.css";
+import UserContext from "../contexts/UserContext";
+import { normalizeRole, ROLE_LANDING, ROLE_LABEL } from "../domain/roles";
+
+const EXPLORE_BY_ROLE = {
+  guest: [
+    { label: "Sản phẩm", to: "/products" },
+    { label: "Concept thiết kế", to: "/design" },
+    { label: "Đăng nhập", to: "/login" },
+    { label: "Đăng ký", to: "/register" },
+  ],
+  customer: [
+    { label: "Sản phẩm", to: "/products" },
+    { label: "Concept thiết kế", to: "/design" },
+    { label: "Giỏ hàng", to: "/cart" },
+    { label: "Đơn hàng của tôi", to: "/orders" },
+    { label: "Hỗ trợ", to: "/chat" },
+  ],
+  sales: [
+    { label: "Bảng điều khiển", to: "/sales" },
+    { label: "Đơn hàng KD", to: "/sales/orders" },
+    { label: "Báo giá", to: "/sales/quotations" },
+    { label: "Chăm sóc khách", to: "/sales/chat" },
+  ],
+  manager: [
+    { label: "Bảng điều khiển", to: "/manager" },
+    { label: "Sản phẩm", to: "/manager/products" },
+    { label: "Concept thiết kế", to: "/manager/designs" },
+    { label: "Danh mục", to: "/manager/categories" },
+    { label: "Doanh thu", to: "/manager/revenue" },
+  ],
+  admin: [
+    { label: "Bảng điều khiển", to: "/admin" },
+    { label: "Người dùng", to: "/admin/users" },
+    { label: "Đơn hàng", to: "/sales/orders" },
+    { label: "Sản phẩm", to: "/manager/products" },
+  ],
+};
 
 function Footer() {
+  const { user } = useContext(UserContext);
+  const roleKey = user ? normalizeRole(user.role) : "guest";
+  const explore = EXPLORE_BY_ROLE[roleKey] || EXPLORE_BY_ROLE.guest;
+  const workspaceHome = user ? ROLE_LANDING[roleKey] || "/" : "/login";
+
   return (
     <footer className="main-footer-bg">
       <div className="main-footer-container">
-
-        {/* Brand */}
         <div className="main-footer-logo-block">
           <div className="main-footer-logo">
-            <img
-              src="https://cdn-icons-png.flaticon.com/512/3774/3774299.png"
-              alt="logo"
-              className="main-footer-logo-img"
-            />
+            <span
+              className="main-footer-logo-mark"
+              aria-hidden
+            >
+              IS
+            </span>
             <span className="main-footer-brand">Interior Studio</span>
           </div>
-
-          <div className="main-footer-desc">
-            We design and craft modern living spaces with a focus on elegance,
-            functionality, and timeless aesthetics. Let’s build your dream space together.
-          </div>
+          <p className="main-footer-desc">
+            Không gian sống hiện đại, tinh tế và ấm áp — thiết kế riêng cho tổ
+            ấm của bạn.
+          </p>
+          {user && roleKey !== "customer" && (
+            <Link to={workspaceHome} className="main-footer-cta">
+              Vào khu vực {ROLE_LABEL[roleKey]} →
+            </Link>
+          )}
         </div>
 
-        {/* Quick links */}
         <div className="main-footer-menu-block">
-          <div className="main-footer-menu-title">Explore</div>
+          <div className="main-footer-menu-title">
+            {roleKey === "guest" || roleKey === "customer"
+              ? "Khám phá"
+              : "Lối tắt làm việc"}
+          </div>
           <ul className="main-footer-menu">
-            <li><a href="/collection">Collections</a></li>
-            <li><a href="/design-3d">3D Design</a></li>
-            <li><a href="/projects">Projects</a></li>
-            <li><a href="/shop">Shop</a></li>
+            {explore.map((item) => (
+              <li key={item.to}>
+                <Link to={item.to}>{item.label}</Link>
+              </li>
+            ))}
           </ul>
         </div>
 
-        {/* Contact */}
         <div className="main-footer-contact-block">
-          <div className="main-footer-menu-title">Contact</div>
-
+          <div className="main-footer-menu-title">Liên hệ</div>
           <div className="main-footer-contact-item">
-            <i className="fa-solid fa-location-dot"></i>
+            <i className="fa-solid fa-location-dot" />
             <span>Ho Chi Minh City, Vietnam</span>
           </div>
-
           <div className="main-footer-contact-item">
-            <i className="fa-solid fa-phone"></i>
+            <i className="fa-solid fa-phone" />
             <a href="tel:+84900000000">+84 900 000 000</a>
           </div>
-
           <div className="main-footer-contact-item">
-            <i className="fa-solid fa-envelope"></i>
+            <i className="fa-solid fa-envelope" />
             <a href="mailto:contact@interiorstudio.com">
               contact@interiorstudio.com
             </a>
           </div>
-
-          <div className="main-footer-socials">
-            <a href="#"><i className="fa-brands fa-facebook-f"></i></a>
-            <a href="#"><i className="fa-brands fa-instagram"></i></a>
-            <a href="#"><i className="fa-brands fa-pinterest-p"></i></a>
-          </div>
         </div>
       </div>
 
-      {/* Copyright */}
       <div className="main-footer-copyright">
         © {new Date().getFullYear()} Interior Studio. All rights reserved.
       </div>

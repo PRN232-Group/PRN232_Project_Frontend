@@ -1,249 +1,197 @@
-import React, { useEffect, useState } from "react";
-import axios from "axios";
-import { useNavigate } from "react-router-dom";
-import "../../styles/manager/orderManagementPage.css";
+﻿import React, { useEffect, useState } from "react";
+import { orderService } from "../../application/services";
+import {
+  ORDER_STATUS_OPTIONS,
+  normalizeOrderStatus,
+  orderStatusCssClass,
+  orderStatusLabel,
+} from "../../domain/orderStatus";
+import { notifySuccess, notifyError } from "../../application/services/notify";
+import { formatVnd } from "../../domain/roles";
 
 const OrderManagementPage = () => {
-  const navigate = useNavigate();
-
   const [orders, setOrders] = useState([]);
-  const [filtered, setFiltered] = useState([]);
-
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState("All");
-
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
-
-  // pagination
-  const [currentPage, setCurrentPage] = useState(1);
-  const pageSize = 8;
-
-  const statusOptions = [
-    "All",
-    "Pending",
-    "Shipping",
-    "Completed",
-    "Cancelled",
-  ];
+  const [selected, setSelected] = useState(null);
 
   useEffect(() => {
     fetchOrders();
   }, []);
 
-  useEffect(() => {
-    filterData();
-  }, [search, status, orders]);
-
   const fetchOrders = async () => {
     try {
       setLoading(true);
-      setError("");
-
-      const res = await axios.get(
-        "https://localhost:5001/api/orders"
-      );
-
-      setOrders(res.data || []);
-      setFiltered(res.data || []);
-    } catch (err) {
-      console.error(err);
-      setError("Không thể tải danh sách đơn hàng");
-
-      // fallback demo
-      const demo = [
-        {
-          id: 101,
-          customerName: "Nguyen Van A",
-          status: "Pending",
-          totalPrice: 5000000,
-        },
-        {
-          id: 102,
-          customerName: "Tran Thi B",
-          status: "Shipping",
-          totalPrice: 3000000,
-        },
-      ];
-
-      setOrders(demo);
-      setFiltered(demo);
+      const res = await orderService.getAll();
+      const list = (res.data || []).map((o) => ({
+        ...o,
+        status: normalizeOrderStatus(o.status),
+      }));
+      setOrders(list);
+    } catch {
+      notifyError("Không tải được đơn hàng");
     } finally {
       setLoading(false);
     }
   };
 
-  const filterData = () => {
-    let data = [...orders];
-
-    if (status !== "All") {
-      data = data.filter((o) => o.status === status);
-    }
-
-    if (search) {
-      data = data.filter(
-        (o) =>
-          String(o.id).includes(search) ||
-          (o.customerName || "")
-            .toLowerCase()
-            .includes(search.toLowerCase())
-      );
-    }
-
-    setFiltered(data);
-    setCurrentPage(1);
-  };
+  const filtered = orders.filter((o) => {
+    const q = search.toLowerCase();
+    const matchQ =
+      String(o.id).includes(search) ||
+      (o.customerName || "").toLowerCase().includes(q);
+    const matchS =
+      status === "All" || normalizeOrderStatus(o.status) === status;
+    return matchQ && matchS;
+  });
 
   const updateStatus = async (id, newStatus) => {
+    const next = normalizeOrderStatus(newStatus);
     try {
-      await axios.put(
-        `https://localhost:5001/api/orders/${id}/status`,
-        {
-          status: newStatus,
-        }
-      );
-
+      await orderService.updateStatus(id, next);
       setOrders((prev) =>
-        prev.map((o) =>
-          o.id === id ? { ...o, status: newStatus } : o
-        )
+        prev.map((o) => (o.id === id ? { ...o, status: next } : o))
       );
-    } catch (err) {
-      console.error(err);
-      alert("Cập nhật trạng thái thất bại");
-    }
-  };
-
-  // pagination
-  const totalPages = Math.ceil(filtered.length / pageSize);
-
-  const startIndex = (currentPage - 1) * pageSize;
-  const currentOrders = filtered.slice(
-    startIndex,
-    startIndex + pageSize
-  );
-
-  const changePage = (page) => {
-    if (page >= 1 && page <= totalPages) {
-      setCurrentPage(page);
+      if (selected?.id === id) setSelected((s) => ({ ...s, status: next }));
+      notifySuccess("Đã cập nhật trạng thái");
+    } catch {
+      notifyError("Cập nhật thất bại");
     }
   };
 
   return (
-    <div className="order-management-page">
-      <h2>Order Management</h2>
+    <div className="staff-page">
+      <h2>Quản lý đơn hàng</h2>
+      <p className="staff-page-sub">
+        Đơn từ storefront — chi tiết dòng hàng, địa chỉ giao, tổng tiền.
+      </p>
 
-      {/* TOOLBAR */}
-      <div className="toolbar">
+      <div className="staff-toolbar">
         <input
-          type="text"
-          placeholder="Search by ID or customer..."
+          placeholder="Tìm mã đơn hoặc khách..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
         />
-
-        <select
-          value={status}
-          onChange={(e) => setStatus(e.target.value)}
-        >
-          {statusOptions.map((s) => (
+        <select value={status} onChange={(e) => setStatus(e.target.value)}>
+          <option value="All">Tất cả trạng thái</option>
+          {ORDER_STATUS_OPTIONS.map((s) => (
             <option key={s} value={s}>
-              {s}
+              {orderStatusLabel(s)}
             </option>
           ))}
         </select>
-
-        <button onClick={fetchOrders}>Reload</button>
+        <button
+          type="button"
+          className="staff-btn staff-btn-ghost"
+          onClick={fetchOrders}
+        >
+          Tải lại
+        </button>
       </div>
 
-      {/* CONTENT */}
-      {loading && <p>Loading orders...</p>}
-      {error && <p className="error">{error}</p>}
+      {loading && <p className="staff-status">Đang tải...</p>}
 
-      {!loading && !error && (
-        <>
-          <table className="table">
-            <thead>
-              <tr>
-                <th>ID</th>
-                <th>Customer</th>
-                <th>Status</th>
-                <th>Total</th>
-                <th>Update</th>
-                <th>Action</th>
-              </tr>
-            </thead>
-
-            <tbody>
-              {currentOrders.length > 0 ? (
-                currentOrders.map((o) => (
-                  <tr key={o.id}>
-                    <td>#{o.id}</td>
-                    <td>{o.customerName}</td>
-
-                    <td>
-                      <span className={`status ${o.status}`}>
-                        {o.status}
-                      </span>
-                    </td>
-
-                    <td>
-                      {o.totalPrice?.toLocaleString()} đ
-                    </td>
-
-                    <td>
-                      <select
-                        value={o.status}
-                        onChange={(e) =>
-                          updateStatus(o.id, e.target.value)
-                        }
-                      >
-                        <option value="Pending">Pending</option>
-                        <option value="Shipping">Shipping</option>
-                        <option value="Completed">
-                          Completed
-                        </option>
-                        <option value="Cancelled">
-                          Cancelled
-                        </option>
-                      </select>
-                    </td>
-
-                    <td>
-                      <button
-                        onClick={() =>
-                          navigate(`/orders/${o.id}`)
-                        }
-                      >
-                        View
-                      </button>
-                    </td>
-                  </tr>
-                ))
-              ) : (
-                <tr>
-                  <td colSpan="6">No orders found</td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-
-          {/* PAGINATION */}
-          <div className="pagination">
-            <button onClick={() => changePage(currentPage - 1)}>
-              Prev
-            </button>
-
-            <span>
-              Page {currentPage} / {totalPages || 1}
-            </span>
-
-            <button onClick={() => changePage(currentPage + 1)}>
-              Next
-            </button>
+      <div className="staff-split">
+        <div className="staff-panel">
+          <div className="staff-panel-head">
+            <h3>Danh sách ({filtered.length})</h3>
           </div>
-        </>
-      )}
+          {filtered.map((o) => (
+            <button
+              key={o.id}
+              type="button"
+              className={
+                selected?.id === o.id
+                  ? "staff-list-item is-active"
+                  : "staff-list-item"
+              }
+              onClick={() => setSelected(o)}
+            >
+              <strong>Đơn #{o.id}</strong>
+              <div className="staff-list-meta">
+                <span>{o.customerName}</span>
+                <span className={`status ${orderStatusCssClass(o.status)}`}>
+                  {orderStatusLabel(o.status)}
+                </span>
+              </div>
+              <div className="staff-price" style={{ marginTop: 4 }}>
+                {formatVnd(o.totalPrice)}
+              </div>
+            </button>
+          ))}
+          {!loading && filtered.length === 0 && (
+            <p className="staff-empty">Không có đơn</p>
+          )}
+        </div>
+
+        <div className="staff-panel">
+          {!selected ? (
+            <p className="staff-empty">Chọn đơn để xem chi tiết</p>
+          ) : (
+            <>
+              <div className="staff-panel-head">
+                <h3>Chi tiết #{selected.id}</h3>
+              </div>
+              <div style={{ padding: 16 }}>
+                <p>
+                  <b>Khách:</b> {selected.customerName}
+                </p>
+                <p>
+                  <b>Email:</b> {selected.customerEmail || "—"}
+                </p>
+                <p>
+                  <b>SĐT:</b> {selected.customerPhone || selected.phone || "—"}
+                </p>
+                <p>
+                  <b>Địa chỉ:</b>{" "}
+                  {selected.shippingAddress || selected.address || "—"}
+                </p>
+                <p>
+                  <b>Tổng:</b>{" "}
+                  <span className="staff-price">
+                    {formatVnd(selected.totalPrice)}
+                  </span>
+                </p>
+
+                <h4 style={{ marginTop: 16 }}>Sản phẩm</h4>
+                <table className="staff-table">
+                  <thead>
+                    <tr>
+                      <th>Tên</th>
+                      <th>SL</th>
+                      <th>Giá</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {(selected.items || []).map((i, idx) => (
+                      <tr key={idx}>
+                        <td>{i.productName}</td>
+                        <td>{i.quantity}</td>
+                        <td className="staff-price">{formatVnd(i.price)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+
+                <div className="staff-field" style={{ marginTop: 14 }}>
+                  <label>Cập nhật trạng thái</label>
+                  <select
+                    value={normalizeOrderStatus(selected.status)}
+                    onChange={(e) => updateStatus(selected.id, e.target.value)}
+                  >
+                    {ORDER_STATUS_OPTIONS.map((s) => (
+                      <option key={s} value={s}>
+                        {orderStatusLabel(s)}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+            </>
+          )}
+        </div>
+      </div>
     </div>
   );
 };

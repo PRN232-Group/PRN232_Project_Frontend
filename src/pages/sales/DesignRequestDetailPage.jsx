@@ -1,29 +1,68 @@
 import React, { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
-import axios from "axios";
-import "../../styles/sales/designRequestDetailPage.css";
+import { Link, useParams } from "react-router-dom";
+import {
+  designRequestService,
+  interiorDesignService,
+  productService,
+} from "../../application/services";
+import { notifySuccess, notifyError } from "../../application/services/notify";
+import { formatVnd, discountPct } from "../../domain/roles";
 
 const DesignRequestDetailPage = () => {
   const { id } = useParams();
-
+  const [list, setList] = useState([]);
   const [request, setRequest] = useState(null);
+  const [concept, setConcept] = useState(null);
+  const [related, setRelated] = useState([]);
   const [loading, setLoading] = useState(true);
   const [note, setNote] = useState("");
   const [status, setStatus] = useState("");
 
   useEffect(() => {
-    fetchDetail();
+    if (id) fetchDetail();
+    else fetchList();
   }, [id]);
+
+  const fetchList = async () => {
+    try {
+      setLoading(true);
+      const res = await designRequestService.getAll();
+      setList(res.data || []);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const fetchDetail = async () => {
     try {
       setLoading(true);
-      const res = await axios.get(`/api/design-requests/${id}`);
-      setRequest(res.data);
-      setStatus(res.data.status);
-      setNote(res.data.note || "");
+      const res = await designRequestService.getById(id);
+      const req = res.data;
+      setRequest(req);
+      setStatus(req.status);
+      setNote(req.note || req.notes || "");
+
+      if (req.interiorDesignId) {
+        try {
+          const dRes = await interiorDesignService.getById(req.interiorDesignId);
+          setConcept(dRes.data);
+          setRelated(dRes.data?.relatedProducts || []);
+        } catch {
+          setConcept(null);
+        }
+      } else if (req.relatedProductIds?.length) {
+        const pRes = await productService.getAll();
+        setRelated(
+          (pRes.data || []).filter((p) =>
+            req.relatedProductIds.includes(p.id)
+          )
+        );
+      }
     } catch (err) {
-      console.error("Load design request error:", err);
+      console.error(err);
+      setRequest(null);
     } finally {
       setLoading(false);
     }
@@ -31,84 +70,251 @@ const DesignRequestDetailPage = () => {
 
   const handleUpdate = async () => {
     try {
-      await axios.put(`/api/design-requests/${id}`, {
+      await designRequestService.update(id, {
         status,
         note,
+        notes: note,
       });
-
-      alert("Updated successfully!");
+      notifySuccess("Đã cập nhật yêu cầu thiết kế");
       fetchDetail();
-    } catch (err) {
-      console.error("Update error:", err);
+    } catch {
+      notifyError("Cập nhật thất bại");
     }
   };
 
   if (loading) {
-    return <div className="design-detail-loading">Loading...</div>;
+    return <div className="staff-page"><p className="staff-status">Đang tải...</p></div>;
+  }
+
+  if (!id) {
+    return (
+      <div className="staff-page">
+        <h2>Yêu cầu thiết kế</h2>
+        <p className="staff-page-sub">
+          Liên kết concept storefront, ngân sách và sản phẩm catalog.
+        </p>
+        <div className="staff-panel">
+          {list.length === 0 ? (
+            <p className="staff-empty">Chưa có yêu cầu</p>
+          ) : (
+            list.map((r) => (
+              <Link
+                key={r.id}
+                to={`/sales/design-requests/${r.id}`}
+                style={{
+                  display: "block",
+                  padding: "14px 16px",
+                  borderBottom: "1px solid var(--line)",
+                  textDecoration: "none",
+                  color: "inherit",
+                }}
+              >
+                <strong>{r.title}</strong>
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    marginTop: 6,
+                    fontSize: 13,
+                    color: "var(--muted)",
+                  }}
+                >
+                  <span>
+                    {r.customerName} · {r.style}
+                  </span>
+                  <span className="staff-badge is-pending">{r.status}</span>
+                </div>
+                <div className="staff-price" style={{ marginTop: 4 }}>
+                  Ngân sách {formatVnd(r.budget)}
+                </div>
+              </Link>
+            ))
+          )}
+        </div>
+      </div>
+    );
   }
 
   if (!request) {
-    return <div className="design-detail-error">Not found</div>;
+    return (
+      <div className="staff-page">
+        <p className="error">Không tìm thấy yêu cầu</p>
+        <Link to="/sales/design-requests">← Quay lại</Link>
+      </div>
+    );
   }
 
   return (
-    <div className="design-detail-container">
-      {/* HEADER */}
-      <div className="design-header">
-        <h2>Design Request Detail</h2>
-        <span className={`status ${status.toLowerCase()}`}>
-          {status}
-        </span>
+    <div className="staff-page">
+      <div className="staff-toolbar">
+        <div style={{ flex: 1 }}>
+          <h2 style={{ marginBottom: 4 }}>{request.title}</h2>
+          <p className="staff-page-sub" style={{ margin: 0 }}>
+            #{request.id} · {request.customerName} · {request.style}
+          </p>
+        </div>
+        <Link to="/sales/design-requests" className="staff-btn staff-btn-ghost">
+          ← Danh sách
+        </Link>
       </div>
 
-      {/* CONTENT */}
-      <div className="design-content">
-        {/* LEFT INFO */}
-        <div className="design-info">
-          <h3>Customer Information</h3>
-          <p><b>Name:</b> {request.customerName}</p>
-          <p><b>Email:</b> {request.customerEmail}</p>
-          <p><b>Phone:</b> {request.customerPhone}</p>
-
-          <h3>Request Detail</h3>
-          <p><b>Title:</b> {request.title}</p>
-          <p><b>Description:</b></p>
-          <p>{request.description}</p>
-
-          <p><b>Created At:</b> {new Date(request.createdAt).toLocaleString()}</p>
+      <div className="staff-kpi-grid">
+        <div className="staff-kpi">
+          <span>Ngân sách khách</span>
+          <strong className="is-clay">{formatVnd(request.budget)}</strong>
         </div>
+        <div className="staff-kpi">
+          <span>Trạng thái</span>
+          <strong>{request.status}</strong>
+        </div>
+        {concept?.priceCompare && (
+          <div className="staff-kpi">
+            <span>Giá concept IS</span>
+            <strong className="is-clay">
+              {formatVnd(concept.priceCompare.studio)}
+            </strong>
+          </div>
+        )}
+        {concept?.areaSqm != null && (
+          <div className="staff-kpi">
+            <span>Diện tích concept</span>
+            <strong>{concept.areaSqm} m²</strong>
+          </div>
+        )}
+      </div>
 
-        {/* RIGHT ACTION */}
-        <div className="design-action">
-          <h3>Attachments</h3>
-
-          <div className="image-list">
-            {request.images?.length > 0 ? (
-              request.images.map((img, index) => (
-                <img key={index} src={img} alt="design" />
-              ))
-            ) : (
-              <p>No images</p>
+      {concept && (
+        <div className="staff-panel" style={{ marginBottom: 16 }}>
+          <div className="staff-panel-head">
+            <h3>Concept tham chiếu: {concept.title}</h3>
+            <Link to="/design" className="staff-btn staff-btn-ghost">
+              Mở gallery khách
+            </Link>
+          </div>
+          <div style={{ padding: 16 }}>
+            <img
+              src={concept.imageUrl}
+              alt={concept.title}
+              style={{
+                width: "100%",
+                maxHeight: 220,
+                objectFit: "cover",
+                borderRadius: 12,
+                marginBottom: 12,
+              }}
+            />
+            <p>{concept.description}</p>
+            {concept.priceCompare && (
+              <p>
+                Studio{" "}
+                <span className="staff-price">
+                  {formatVnd(concept.priceCompare.studio)}
+                </span>{" "}
+                · TT{" "}
+                <span className="staff-price-market">
+                  {formatVnd(concept.priceCompare.marketAvg)}
+                </span>
+              </p>
             )}
           </div>
+        </div>
+      )}
 
-          <h3>Update Status</h3>
-          <select value={status} onChange={(e) => setStatus(e.target.value)}>
-            <option value="PENDING">PENDING</option>
-            <option value="PROCESSING">PROCESSING</option>
-            <option value="DONE">DONE</option>
-            <option value="REJECTED">REJECTED</option>
-          </select>
+      <div className="staff-panel" style={{ marginBottom: 16 }}>
+        <div className="staff-panel-head">
+          <h3>Sản phẩm gợi ý ({related.length})</h3>
+        </div>
+        <div className="staff-table-wrap">
+          <table className="staff-table">
+            <thead>
+              <tr>
+                <th>Sản phẩm</th>
+                <th>Kho</th>
+                <th>Giá / TT</th>
+                <th>Giảm</th>
+                <th>Thông số</th>
+              </tr>
+            </thead>
+            <tbody>
+              {related.map((p) => {
+                const pct = discountPct(p.price, p.marketPrice);
+                return (
+                  <tr key={p.id}>
+                    <td>
+                      <div className="staff-product-cell">
+                        <img src={p.imageUrl} alt="" />
+                        <div>
+                          <h4>{p.name}</h4>
+                          <p>
+                            <Link to={`/products/${p.id}`}>Storefront →</Link>
+                          </p>
+                        </div>
+                      </div>
+                    </td>
+                    <td>{p.stock}</td>
+                    <td>
+                      <span className="staff-price">{formatVnd(p.price)}</span>
+                      {p.marketPrice > p.price && (
+                        <span className="staff-price-market">
+                          {formatVnd(p.marketPrice)}
+                        </span>
+                      )}
+                    </td>
+                    <td>
+                      {pct > 0 ? (
+                        <span className="staff-badge is-save">−{pct}%</span>
+                      ) : (
+                        "—"
+                      )}
+                    </td>
+                    <td>
+                      <ul className="staff-specs-mini">
+                        {p.specs?.material && <li>{p.specs.material}</li>}
+                        {p.specs?.origin && <li>XQ: {p.specs.origin}</li>}
+                      </ul>
+                    </td>
+                  </tr>
+                );
+              })}
+              {related.length === 0 && (
+                <tr>
+                  <td colSpan={5} className="staff-empty">
+                    Chưa có sản phẩm liên quan
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
 
-          <h3>Note</h3>
-          <textarea
-            value={note}
-            onChange={(e) => setNote(e.target.value)}
-            placeholder="Write internal note..."
-          />
-
-          <button className="update-btn" onClick={handleUpdate}>
-            Save Changes
+      <div className="staff-panel">
+        <div className="staff-panel-head">
+          <h3>Cập nhật xử lý</h3>
+        </div>
+        <div style={{ padding: 16 }}>
+          <div className="staff-form-grid">
+            <div className="staff-field">
+              <label>Trạng thái</label>
+              <select value={status} onChange={(e) => setStatus(e.target.value)}>
+                <option value="New">New</option>
+                <option value="InReview">InReview</option>
+                <option value="Quoted">Quoted</option>
+                <option value="Done">Done</option>
+              </select>
+            </div>
+            <div className="staff-field full">
+              <label>Ghi chú</label>
+              <textarea value={note} onChange={(e) => setNote(e.target.value)} />
+            </div>
+          </div>
+          <button
+            type="button"
+            className="staff-btn staff-btn-primary"
+            style={{ marginTop: 12 }}
+            onClick={handleUpdate}
+          >
+            Lưu cập nhật
           </button>
         </div>
       </div>

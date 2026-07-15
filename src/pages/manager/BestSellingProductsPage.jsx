@@ -1,129 +1,118 @@
 import React, { useEffect, useState } from "react";
-import axios from "axios";
-import "../../styles/manager/bestSellingProductsPage.css";
+import { analyticsService } from "../../application/services";
+import { formatVnd, discountPct } from "../../domain/roles";
+import { productService } from "../../application/services";
 
 const BestSellingProductsPage = () => {
-  const [products, setProducts] = useState([]);
-  const [filtered, setFiltered] = useState([]);
-
+  const [rows, setRows] = useState([]);
+  const [catalog, setCatalog] = useState([]);
   const [search, setSearch] = useState("");
-
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
 
   useEffect(() => {
-    fetchBestSelling();
+    load();
   }, []);
 
-  useEffect(() => {
-    filterData();
-  }, [search, products]);
-
-  const fetchBestSelling = async () => {
+  const load = async () => {
     try {
       setLoading(true);
-      setError("");
-
-      const res = await axios.get(
-        "https://localhost:5001/api/analytics/best-selling-products"
-      );
-
-      setProducts(res.data || []);
-      setFiltered(res.data || []);
-    } catch (err) {
-      console.error(err);
-      setError("Không thể tải dữ liệu sản phẩm bán chạy");
-
-      // fallback demo data
-      const demo = [
-        {
-          id: 1,
-          name: "Modern Sofa",
-          soldQuantity: 120,
-          revenue: 600000000,
-        },
-        {
-          id: 2,
-          name: "Wood Table",
-          soldQuantity: 95,
-          revenue: 190000000,
-        },
-        {
-          id: 3,
-          name: "Office Chair",
-          soldQuantity: 80,
-          revenue: 120000000,
-        },
-      ];
-
-      setProducts(demo);
-      setFiltered(demo);
+      const [bRes, pRes] = await Promise.all([
+        analyticsService.getBestSelling(),
+        productService.getAll(),
+      ]);
+      setRows(bRes.data || []);
+      setCatalog(pRes.data || []);
+    } catch (e) {
+      console.error(e);
     } finally {
       setLoading(false);
     }
   };
 
-  const filterData = () => {
-    const data = products.filter((p) =>
-      p.name.toLowerCase().includes(search.toLowerCase())
+  const enriched = rows
+    .map((r) => {
+      const p = catalog.find((x) => x.id === (r.id || r.productId));
+      return {
+        ...r,
+        imageUrl: p?.imageUrl,
+        marketPrice: p?.marketPrice,
+        stock: p?.stock,
+        price: p?.price ?? r.price,
+      };
+    })
+    .filter((r) =>
+      (r.name || "").toLowerCase().includes(search.toLowerCase())
     );
 
-    setFiltered(data);
-  };
-
   return (
-    <div className="best-selling-page">
-      <h2>Best Selling Products</h2>
+    <div className="staff-page">
+      <h2>Sản phẩm bán chạy</h2>
+      <p className="staff-page-sub">
+        Dựa trên đơn hàng mock — kèm tồn kho và % giảm so thị trường.
+      </p>
 
-      {/* TOOLBAR */}
-      <div className="toolbar">
+      <div className="staff-toolbar">
         <input
-          type="text"
-          placeholder="Search product..."
+          placeholder="Tìm sản phẩm..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
         />
-
-        <button onClick={fetchBestSelling}>Reload</button>
+        <button type="button" className="staff-btn staff-btn-ghost" onClick={load}>
+          Tải lại
+        </button>
       </div>
 
-      {/* CONTENT */}
-      {loading && <p>Loading data...</p>}
-      {error && <p className="error">{error}</p>}
+      {loading && <p className="staff-status">Đang tải...</p>}
 
-      {!loading && !error && (
-        <table className="table">
+      <div className="staff-panel">
+        <table className="staff-table">
           <thead>
             <tr>
-              <th>Rank</th>
-              <th>Product Name</th>
-              <th>Sold Quantity</th>
-              <th>Revenue</th>
+              <th>#</th>
+              <th>Sản phẩm</th>
+              <th>Đã bán</th>
+              <th>Doanh thu</th>
+              <th>Kho</th>
+              <th>Giảm khách</th>
             </tr>
           </thead>
-
           <tbody>
-            {filtered.length > 0 ? (
-              filtered
-                .sort((a, b) => b.soldQuantity - a.soldQuantity)
-                .map((p, index) => (
-                  <tr key={p.id}>
-                    <td>#{index + 1}</td>
-                    <td>{p.name}</td>
-                    <td>{p.soldQuantity}</td>
-                    <td>
-                      {p.revenue?.toLocaleString()} đ
-                    </td>
-                  </tr>
-                ))
-            ) : (
+            {enriched.map((p, i) => {
+              const pct = discountPct(p.price, p.marketPrice);
+              return (
+                <tr key={p.id || p.productId || i}>
+                  <td>{i + 1}</td>
+                  <td>
+                    <div className="staff-product-cell">
+                      {p.imageUrl && <img src={p.imageUrl} alt="" />}
+                      <div>
+                        <h4>{p.name}</h4>
+                      </div>
+                    </div>
+                  </td>
+                  <td>{p.soldQuantity ?? p.sold}</td>
+                  <td className="staff-price">{formatVnd(p.revenue)}</td>
+                  <td>{p.stock ?? "—"}</td>
+                  <td>
+                    {pct > 0 ? (
+                      <span className="staff-badge is-save">−{pct}%</span>
+                    ) : (
+                      "—"
+                    )}
+                  </td>
+                </tr>
+              );
+            })}
+            {!loading && enriched.length === 0 && (
               <tr>
-                <td colSpan="4">No data found</td>
+                <td colSpan={6} className="staff-empty">
+                  Chưa có dữ liệu bán chạy
+                </td>
               </tr>
             )}
           </tbody>
         </table>
-      )}
+      </div>
     </div>
   );
 };
