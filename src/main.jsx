@@ -1,5 +1,6 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
+import axios from 'axios';
 import App from './App.jsx';
 import 'antd/dist/reset.css';
 import { ConfigProvider } from 'antd';
@@ -7,6 +8,28 @@ import './index.css';
 import './styles/components.css';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+
+/*
+ * When there is no backend, unmatched /api requests fall through to the SPA
+ * and resolve with the index.html document (a string). That defeats guards
+ * like `res.data || []` and crashes pages that call `.map` or feed AntD tables.
+ * Reject any HTML response so every page's existing catch block runs and
+ * state stays at its safe initial value.
+ */
+axios.interceptors.response.use(
+  (response) => {
+    const contentType = response?.headers?.["content-type"] || "";
+    const data = response?.data;
+    const looksLikeHtml =
+      typeof data === "string" &&
+      (contentType.includes("text/html") || data.trimStart().startsWith("<"));
+    if (looksLikeHtml) {
+      return Promise.reject(new Error("Backend unavailable (received HTML)."));
+    }
+    return response;
+  },
+  (error) => Promise.reject(error)
+);
 
 const theme = {
   token: {

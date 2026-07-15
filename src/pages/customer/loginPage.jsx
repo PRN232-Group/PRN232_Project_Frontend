@@ -1,12 +1,22 @@
-import React, { useState } from "react";
+import React, { useState, useContext } from "react";
 import { useNavigate } from "react-router-dom";
 import "@fortawesome/fontawesome-free/css/all.min.css";
 import "../../styles/customer/authPage.css";
+import UserContext from "../../contexts/UserContext";
+
+const ROLE_LANDING = {
+  Customer: "/",
+  Sales: "/sales",
+  Production: "/production",
+  Manager: "/manager",
+  Admin: "/admin",
+};
 
 function LoginPage() {
   const navigate = useNavigate();
+  const { setUser } = useContext(UserContext);
 
-  const [form, setForm] = useState({ email: "", password: "" });
+  const [form, setForm] = useState({ email: "", password: "", role: "Customer" });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -39,14 +49,15 @@ function LoginPage() {
       await new Promise((res) => setTimeout(res, 800));
 
       const mockUser = {
+        name: form.email.split("@")[0],
         email: form.email,
-        role: "User",
+        role: form.role,
       };
 
       localStorage.setItem("user", JSON.stringify(mockUser));
+      setUser(mockUser);
 
-      alert("Login success!");
-navigate("/", { replace: true });
+      navigate(ROLE_LANDING[form.role] || "/", { replace: true });
     } catch (err) {
       setError("Đăng nhập thất bại!");
     } finally {
@@ -117,6 +128,19 @@ navigate("/", { replace: true });
                   />
                 </span>
               </div>
+
+              <select
+                name="role"
+                value={form.role}
+                onChange={handleChange}
+                aria-label="Vai trò đăng nhập"
+              >
+                <option value="Customer">Khách hàng</option>
+                <option value="Sales">Nhân viên Kinh doanh</option>
+                <option value="Production">Nhân viên Sản xuất</option>
+                <option value="Manager">Quản lý</option>
+                <option value="Admin">Quản trị viên</option>
+              </select>
 
               {error && (
                 <div style={{ color: "red", marginBottom: 10 }}>{error}</div>
