@@ -29,25 +29,28 @@ const UserManagementPage = () => {
   const [createForm, setCreateForm] = useState(emptyCreate);
   const [createBusy, setCreateBusy] = useState(false);
 
-  const [roleEdit, setRoleEdit] = useState(null); // user being edited
+  const [roleEdit, setRoleEdit] = useState(null);
   const [nextRole, setNextRole] = useState("");
   const [roleBusy, setRoleBusy] = useState(false);
 
+  const [lockConfirm, setLockConfirm] = useState(null); // { user, nextLocked }
+
   const allowedCreateRoles = assignableRoles(me?.role);
   const allowedEditRoles = assignableRoles(me?.role);
+  const anyModal = createOpen || roleEdit || lockConfirm;
 
   useEffect(() => {
     fetchUsers();
   }, []);
 
   useEffect(() => {
-    if (!createOpen) return undefined;
+    if (!anyModal) return undefined;
     const prev = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     return () => {
       document.body.style.overflow = prev;
     };
-  }, [createOpen, roleEdit]);
+  }, [anyModal]);
 
   const fetchUsers = async () => {
     try {
@@ -97,10 +100,7 @@ const UserManagementPage = () => {
   };
 
   const openRoleEdit = (u) => {
-    if (!canManageUser(me, u)) {
-      notifyError("Không thể đổi role của chính mình hoặc role ngang/cao hơn");
-      return;
-    }
+    if (!canManageUser(me, u)) return;
     setRoleEdit(u);
     setNextRole(
       allowedEditRoles.includes(u.role)
@@ -116,7 +116,9 @@ const UserManagementPage = () => {
       const res = await userService.updateRole(roleEdit.id, nextRole);
       setUsers((prev) =>
         prev.map((x) =>
-          x.id === roleEdit.id ? { ...x, ...(res.data || { role: nextRole }) } : x
+          x.id === roleEdit.id
+            ? { ...x, ...(res.data || { role: nextRole }) }
+            : x
         )
       );
       notifySuccess("Đã cập nhật role");
@@ -130,20 +132,14 @@ const UserManagementPage = () => {
     }
   };
 
-  const toggleLock = async (u) => {
-    if (!canManageUser(me, u)) {
-      notifyError("Không thể khóa chính mình hoặc tài khoản role ngang/cao hơn");
-      return;
-    }
-    const nextLocked = !isUserLocked(u);
-    const name = u.name || u.fullName || u.email;
-    const ok = window.confirm(
-      nextLocked
-        ? `Khóa tài khoản “${name}”? User sẽ không đăng nhập được.`
-        : `Mở khóa tài khoản “${name}”?`
-    );
-    if (!ok) return;
+  const askToggleLock = (u) => {
+    if (!canManageUser(me, u)) return;
+    setLockConfirm({ user: u, nextLocked: !isUserLocked(u) });
+  };
 
+  const confirmToggleLock = async () => {
+    if (!lockConfirm) return;
+    const { user: u, nextLocked } = lockConfirm;
     try {
       setBusyId(u.id);
       const res = await userService.setLocked(u.id, nextLocked);
@@ -156,6 +152,7 @@ const UserManagementPage = () => {
         prev.map((x) => (x.id === u.id ? { ...x, ...updated } : x))
       );
       notifySuccess(nextLocked ? "Đã khóa tài khoản" : "Đã mở khóa tài khoản");
+      setLockConfirm(null);
     } catch (err) {
       notifyError(
         err?.response?.data?.message || err?.message || "Thao tác thất bại"
@@ -179,8 +176,8 @@ const UserManagementPage = () => {
     <div className="staff-page">
       <h2>Người dùng</h2>
       <p className="staff-page-sub">
-        Thêm user · đổi role (không sửa chính mình / role ngang trở lên) ·
-        khóa/mở khóa.
+        Thêm user · đổi role · khóa/mở khóa. Nút mờ với tài khoản của bạn hoặc
+        role ngang trở lên.
       </p>
 
       <div className="staff-toolbar">
@@ -230,7 +227,7 @@ const UserManagementPage = () => {
                 <th>SĐT</th>
                 <th>Role</th>
                 <th>Trạng thái</th>
-                <th></th>
+                <th className="staff-col-actions">Thao tác</th>
               </tr>
             </thead>
             <tbody>
@@ -239,18 +236,15 @@ const UserManagementPage = () => {
                 const manageable = canManageUser(me, u);
                 const isMe = me && Number(me.id) === Number(u.id);
                 return (
-                  <tr key={u.id}>
+                  <tr key={u.id} className={isMe ? "staff-row-self" : undefined}>
                     <td>#{u.id}</td>
                     <td>
-                      {u.name || u.fullName}
-                      {isMe && (
-                        <span
-                          className="staff-badge is-active"
-                          style={{ marginLeft: 8 }}
-                        >
-                          Bạn
-                        </span>
-                      )}
+                      <div className="staff-user-name">
+                        <span>{u.name || u.fullName}</span>
+                        {isMe && (
+                          <span className="staff-badge is-active">Bạn</span>
+                        )}
+                      </div>
                     </td>
                     <td>{u.email}</td>
                     <td>{u.phone || "—"}</td>
@@ -265,15 +259,22 @@ const UserManagementPage = () => {
                       )}
                     </td>
                     <td>
-                      <div className="staff-actions">
+                      <div className="staff-actions staff-actions-soft">
                         <button
                           type="button"
-                          className="staff-btn staff-btn-ghost"
+                          className={
+                            manageable
+                              ? "staff-btn staff-btn-ghost"
+                              : "staff-btn staff-btn-ghost is-faded"
+                          }
                           disabled={!manageable}
+                          aria-disabled={!manageable}
                           title={
                             manageable
                               ? "Đổi role"
-                              : "Không thể đổi role của mình / role ngang+"
+                              : isMe
+                                ? "Không đổi role của chính mình"
+                                : "Không đổi role ngang / cao hơn"
                           }
                           onClick={() => openRoleEdit(u)}
                         >
@@ -282,19 +283,23 @@ const UserManagementPage = () => {
                         <button
                           type="button"
                           className={
-                            locked
-                              ? "staff-btn staff-btn-primary"
-                              : "staff-btn staff-btn-danger"
+                            !manageable
+                              ? "staff-btn staff-btn-ghost is-faded"
+                              : locked
+                                ? "staff-btn staff-btn-soft"
+                                : "staff-btn staff-btn-warn"
                           }
                           disabled={!manageable || busyId === u.id}
                           title={
                             manageable
                               ? locked
-                                ? "Mở khóa"
-                                : "Khóa"
-                              : "Không thể khóa mình / role ngang+"
+                                ? "Mở khóa tài khoản"
+                                : "Khóa tài khoản"
+                              : isMe
+                                ? "Không khóa chính mình"
+                                : "Không khóa role ngang / cao hơn"
                           }
-                          onClick={() => toggleLock(u)}
+                          onClick={() => askToggleLock(u)}
                         >
                           {busyId === u.id
                             ? "…"
@@ -324,10 +329,7 @@ const UserManagementPage = () => {
           className="staff-modal-backdrop"
           onClick={() => setCreateOpen(false)}
         >
-          <div
-            className="staff-modal"
-            onClick={(e) => e.stopPropagation()}
-          >
+          <div className="staff-modal" onClick={(e) => e.stopPropagation()}>
             <div className="staff-modal-head">
               <h3>Thêm người dùng</h3>
               <button
@@ -424,7 +426,7 @@ const UserManagementPage = () => {
           onClick={() => setRoleEdit(null)}
         >
           <div
-            className="staff-modal"
+            className="staff-modal staff-modal-sm"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="staff-modal-head">
@@ -438,25 +440,37 @@ const UserManagementPage = () => {
               </button>
             </div>
             <div className="staff-modal-body">
-              <p className="staff-field-hint" style={{ marginBottom: 12 }}>
-                {roleEdit.name || roleEdit.email} · hiện tại{" "}
-                <strong>{roleEdit.role}</strong>
-              </p>
-              <div className="staff-field">
+              <div className="staff-confirm-user">
+                <span className="staff-confirm-avatar">
+                  {(roleEdit.name || roleEdit.email || "?").charAt(0)}
+                </span>
+                <div>
+                  <strong>{roleEdit.name || roleEdit.email}</strong>
+                  <p>
+                    Role hiện tại · <em>{roleEdit.role}</em>
+                  </p>
+                </div>
+              </div>
+              <div className="staff-field" style={{ marginTop: 16 }}>
                 <label htmlFor="ur-role">Role mới</label>
-                <select
-                  id="ur-role"
-                  value={nextRole}
-                  onChange={(e) => setNextRole(e.target.value)}
-                >
+                <div className="staff-role-pills">
                   {allowedEditRoles.map((r) => (
-                    <option key={r} value={r}>
+                    <button
+                      key={r}
+                      type="button"
+                      className={
+                        nextRole === r
+                          ? "staff-role-pill is-on"
+                          : "staff-role-pill"
+                      }
+                      onClick={() => setNextRole(r)}
+                    >
                       {r}
-                    </option>
+                    </button>
                   ))}
-                </select>
+                </div>
                 <p className="staff-field-hint">
-                  Chỉ được cập nhật role — không sửa thông tin cá nhân tại đây.
+                  Chỉ cập nhật role — không sửa thông tin cá nhân.
                 </p>
               </div>
             </div>
@@ -475,6 +489,84 @@ const UserManagementPage = () => {
                 onClick={submitRole}
               >
                 {roleBusy ? "Đang lưu…" : "Lưu role"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {lockConfirm && (
+        <div
+          className="staff-modal-backdrop"
+          onClick={() => setLockConfirm(null)}
+        >
+          <div
+            className="staff-modal staff-modal-sm staff-confirm-modal"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="staff-modal-head">
+              <h3>
+                {lockConfirm.nextLocked ? "Khóa tài khoản?" : "Mở khóa?"}
+              </h3>
+              <button
+                type="button"
+                className="staff-btn staff-btn-ghost"
+                onClick={() => setLockConfirm(null)}
+              >
+                Đóng
+              </button>
+            </div>
+            <div className="staff-modal-body">
+              <div className="staff-confirm-user">
+                <span
+                  className={
+                    lockConfirm.nextLocked
+                      ? "staff-confirm-avatar is-warn"
+                      : "staff-confirm-avatar is-ok"
+                  }
+                >
+                  {(
+                    lockConfirm.user.name ||
+                    lockConfirm.user.email ||
+                    "?"
+                  ).charAt(0)}
+                </span>
+                <div>
+                  <strong>
+                    {lockConfirm.user.name || lockConfirm.user.email}
+                  </strong>
+                  <p>{lockConfirm.user.email}</p>
+                </div>
+              </div>
+              <p className="staff-confirm-copy">
+                {lockConfirm.nextLocked
+                  ? "User sẽ không đăng nhập được cho đến khi được mở khóa."
+                  : "Tài khoản sẽ đăng nhập bình thường trở lại."}
+              </p>
+            </div>
+            <div className="staff-modal-foot">
+              <button
+                type="button"
+                className="staff-btn staff-btn-ghost"
+                onClick={() => setLockConfirm(null)}
+              >
+                Hủy
+              </button>
+              <button
+                type="button"
+                className={
+                  lockConfirm.nextLocked
+                    ? "staff-btn staff-btn-warn"
+                    : "staff-btn staff-btn-primary"
+                }
+                disabled={busyId === lockConfirm.user.id}
+                onClick={confirmToggleLock}
+              >
+                {busyId === lockConfirm.user.id
+                  ? "Đang xử lý…"
+                  : lockConfirm.nextLocked
+                    ? "Khóa tài khoản"
+                    : "Mở khóa"}
               </button>
             </div>
           </div>
