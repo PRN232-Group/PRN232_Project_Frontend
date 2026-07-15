@@ -75,7 +75,9 @@ const CustomerChatPage = () => {
   };
 
   const handleKeyDown = (e) => {
-    if (e.key === "Enter") {
+    if (e.nativeEvent.isComposing || e.keyCode === 229) return;
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
       sendMessage();
     }
   };

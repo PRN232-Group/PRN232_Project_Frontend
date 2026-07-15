@@ -4,6 +4,7 @@ import App from './App.jsx';
 import 'antd/dist/reset.css';
 import { ConfigProvider } from 'antd';
 import './index.css';
+import './styles/components.css';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
