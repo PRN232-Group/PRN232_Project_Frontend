@@ -7,6 +7,7 @@ import {
   canManageUser,
 } from "../../domain/roles";
 import UserContext from "../../contexts/UserContext";
+import StaffModalPortal from "../../components/StaffModalPortal";
 
 const isUserLocked = (u) => u.isLocked === true || u.status === "Locked";
 
@@ -37,20 +38,10 @@ const UserManagementPage = () => {
 
   const allowedCreateRoles = assignableRoles(me?.role);
   const allowedEditRoles = assignableRoles(me?.role);
-  const anyModal = createOpen || roleEdit || lockConfirm;
 
   useEffect(() => {
     fetchUsers();
   }, []);
-
-  useEffect(() => {
-    if (!anyModal) return undefined;
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    return () => {
-      document.body.style.overflow = prev;
-    };
-  }, [anyModal]);
 
   const fetchUsers = async () => {
     try {
@@ -324,11 +315,7 @@ const UserManagementPage = () => {
         </div>
       </div>
 
-      {createOpen && (
-        <div
-          className="staff-modal-backdrop"
-          onClick={() => setCreateOpen(false)}
-        >
+      <StaffModalPortal open={createOpen} onClose={() => setCreateOpen(false)}>
           <div className="staff-modal" onClick={(e) => e.stopPropagation()}>
             <div className="staff-modal-head">
               <h3>Thêm người dùng</h3>
@@ -417,14 +404,10 @@ const UserManagementPage = () => {
               </div>
             </form>
           </div>
-        </div>
-      )}
+        </StaffModalPortal>
 
-      {roleEdit && (
-        <div
-          className="staff-modal-backdrop"
-          onClick={() => setRoleEdit(null)}
-        >
+      <StaffModalPortal open={!!roleEdit} onClose={() => setRoleEdit(null)}>
+        {roleEdit ? (
           <div
             className="staff-modal staff-modal-sm"
             onClick={(e) => e.stopPropagation()}
@@ -492,14 +475,14 @@ const UserManagementPage = () => {
               </button>
             </div>
           </div>
-        </div>
-      )}
+        ) : null}
+      </StaffModalPortal>
 
-      {lockConfirm && (
-        <div
-          className="staff-modal-backdrop"
-          onClick={() => setLockConfirm(null)}
-        >
+      <StaffModalPortal
+        open={!!lockConfirm}
+        onClose={() => setLockConfirm(null)}
+      >
+        {lockConfirm ? (
           <div
             className="staff-modal staff-modal-sm staff-confirm-modal"
             onClick={(e) => e.stopPropagation()}
@@ -570,8 +553,8 @@ const UserManagementPage = () => {
               </button>
             </div>
           </div>
-        </div>
-      )}
+        ) : null}
+      </StaffModalPortal>
     </div>
   );
 };

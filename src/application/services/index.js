@@ -43,9 +43,14 @@ export const userService = {
 
 export const roleService = {
   getAll: () => apiClient.get("/api/roles"),
-  create: (body) => apiClient.post("/api/roles", body),
-  update: (id, body) => apiClient.put(`/api/roles/${id}`, body),
-  remove: (id) => apiClient.delete(`/api/roles/${id}`),
+  getById: (id) => apiClient.get(`/api/roles/${id}`),
+};
+
+export const permissionService = {
+  getMine: () => apiClient.get("/api/permissions/me"),
+  getMatrix: () => apiClient.get("/api/permissions/matrix"),
+  setRolePermissions: (roleId, pageKeys) =>
+    apiClient.put(`/api/permissions/roles/${roleId}`, { pageKeys }),
 };
 
 export const categoryService = {
@@ -57,6 +62,8 @@ export const categoryService = {
 
 export const contentService = {
   getAll: () => apiClient.get("/api/contents"),
+  getById: (id) => apiClient.get(`/api/contents/${id}`),
+  getBySlug: (slug) => apiClient.get(`/api/contents/by-slug/${encodeURIComponent(slug)}`),
   create: (body) => apiClient.post("/api/contents", body),
   update: (id, body) => apiClient.put(`/api/contents/${id}`, body),
   remove: (id) => apiClient.delete(`/api/contents/${id}`),
@@ -83,11 +90,15 @@ export const chatService = {
 
 export const quotationService = {
   getRequests: () => apiClient.get("/api/quotation-requests"),
+  getMyRequests: () => apiClient.get("/api/quotation-requests/mine"),
+  createRequest: (body) => apiClient.post("/api/quotation-requests", body),
   reply: (id, body) =>
     apiClient.put(`/api/quotation-requests/${id}/reply`, body),
   updateRequest: (id, body) =>
     apiClient.put(`/api/quotation-requests/${id}`, body),
   getQuotations: () => apiClient.get("/api/quotations"),
+  getMyQuotations: () => apiClient.get("/api/quotations/mine"),
+  createQuotation: (body) => apiClient.post("/api/quotations", body),
   updateQuotation: (id, body) =>
     apiClient.put(`/api/quotations/${id}`, body),
 };

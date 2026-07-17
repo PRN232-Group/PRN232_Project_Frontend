@@ -65,6 +65,28 @@ export function formatVnd(n) {
   return `${Number(n || 0).toLocaleString("vi-VN")} ₫`;
 }
 
+/**
+ * Hiển thị số “ngưỡng+” cho stats storefront.
+ * Ví dụ: 13 → "10+", 6 → "5+", 5 → "5", 120 → "100+"
+ */
+export function formatCountThreshold(n) {
+  const count = Number(n) || 0;
+  const thresholds = [10000, 1000, 100, 50, 10, 5];
+  for (const t of thresholds) {
+    if (count > t) return `${t}+`;
+  }
+  return String(count);
+}
+
+/** Còn hàng khi stock > 0 (hoặc cờ inStock) */
+export function isProductInStock(p) {
+  if (!p) return false;
+  if (p.inStock === false) return false;
+  if (p.inStock === true) return true;
+  if (p.stock != null && p.stock !== "") return Number(p.stock) > 0;
+  return true;
+}
+
 /** % giảm so với giá thị trường */
 export function discountPct(price, marketPrice) {
   const p = Number(price) || 0;
@@ -110,4 +132,63 @@ export function canManageUser(actor, target) {
 export function assignableRoles(actorRole) {
   const actorLevel = roleRank(actorRole);
   return Object.values(ROLES).filter((r) => ROLE_RANK[r] < actorLevel);
+}
+
+/**
+ * Trang luôn mở (không cần trong RolePermissions):
+ * trang chủ + tổng quan admin/manager/sales.
+ */
+export const ALWAYS_ALLOWED_PATHS = Object.freeze([
+  "/",
+  "/admin",
+  "/manager",
+  "/sales",
+]);
+
+export function isAlwaysAllowedPath(pathname) {
+  const path = (pathname || "/").split("?")[0].replace(/\/$/, "") || "/";
+  return ALWAYS_ALLOWED_PATHS.includes(path);
+}
+
+/** pageKey khớp exact hoặc là prefix của pathname (vd /sales/design-requests/3) */
+export function pathMatchesPageKey(pathname, pageKey) {
+  const path = (pathname || "/").split("?")[0];
+  const key = pageKey || "";
+  if (!key) return false;
+  return path === key || path.startsWith(`${key}/`);
+}
+
+export function canAccessPage(pathname, permissions) {
+  if (isAlwaysAllowedPath(pathname)) return true;
+  const path = (pathname || "/").split("?")[0];
+  // Alias cũ: /sales/quotation-approval → hub /sales/quotations
+  if (path === "/sales/quotation-approval" || path.startsWith("/sales/quotation-approval/")) {
+    return canAccessPage("/sales/quotations", permissions);
+  }
+  const list = Array.isArray(permissions) ? permissions : [];
+  return list.some((k) => pathMatchesPageKey(pathname, k));
+}
+
+export function filterMenuByPermissions(items, permissions) {
+  const list = Array.isArray(permissions) ? permissions : [];
+  const walk = (nodes) =>
+    (nodes || [])
+      .map((item) => {
+        if (Array.isArray(item.children)) {
+          const children = walk(item.children);
+          if (children.length === 0) return null;
+          return { ...item, children };
+        }
+        if (item.type === "divider") return item;
+        const key = item.key;
+        if (!key || typeof key !== "string" || key.startsWith("sub-")) return item;
+        if (isAlwaysAllowedPath(key)) return item;
+        if (list.some((k) => pathMatchesPageKey(key, k) || pathMatchesPageKey(k, key))) {
+          return item;
+        }
+        return null;
+      })
+      .filter(Boolean);
+
+  return walk(items);
 }

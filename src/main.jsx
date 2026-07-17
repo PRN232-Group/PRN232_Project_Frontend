@@ -33,6 +33,11 @@ const theme = {
     fontFamily:
       "'Poppins', system-ui, -apple-system, 'Segoe UI', sans-serif",
     controlHeight: 40,
+    motionDurationFast: "0.18s",
+    motionDurationMid: "0.28s",
+    motionDurationSlow: "0.36s",
+    motionEaseOut: "cubic-bezier(0.22, 1, 0.36, 1)",
+    motionEaseInOut: "cubic-bezier(0.45, 0, 0.55, 1)",
   },
   components: {
     Button: { borderRadius: 999, controlHeight: 40, fontWeight: 600 },

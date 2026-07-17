@@ -5,6 +5,7 @@ import {
 } from "../../application/services";
 import { notifySuccess, notifyError } from "../../application/services/notify";
 import { formatVnd, discountPct } from "../../domain/roles";
+import StaffModalPortal from "../../components/StaffModalPortal";
 
 const CATEGORY_OPTIONS = [
   { value: "Living", label: "Phòng khách" },
@@ -142,6 +143,8 @@ const DesignManagementPage = () => {
   const [formTab, setFormTab] = useState("basic");
   const [tabAnimKey, setTabAnimKey] = useState(0);
 
+  const [saving, setSaving] = useState(false);
+
   useEffect(() => {
     load();
   }, []);
@@ -149,15 +152,6 @@ const DesignManagementPage = () => {
   useEffect(() => {
     setPreviewOk(true);
   }, [form.imageUrl]);
-
-  useEffect(() => {
-    if (!isOpen) return undefined;
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    return () => {
-      document.body.style.overflow = prev;
-    };
-  }, [isOpen]);
 
   const load = async () => {
     try {
@@ -168,8 +162,10 @@ const DesignManagementPage = () => {
       ]);
       setDesigns(dRes.data || []);
       setProducts(pRes.data || []);
-    } catch {
-      notifyError("Không tải được concept thiết kế");
+    } catch (err) {
+      notifyError(
+        err?.response?.data?.message || "Không tải được concept thiết kế"
+      );
     } finally {
       setLoading(false);
     }
@@ -197,12 +193,18 @@ const DesignManagementPage = () => {
     setIsOpen(true);
   };
 
-  const openEdit = (d) => {
+  const openEdit = async (d) => {
     setEditing(d);
     setForm(toForm(d));
     setFormTab("basic");
     setTabAnimKey((k) => k + 1);
     setIsOpen(true);
+    try {
+      const res = await interiorDesignService.getById(d.id);
+      if (res.data) setForm(toForm(res.data));
+    } catch {
+      /* giữ data từ list */
+    }
   };
 
   const onField = (e) => {
@@ -232,6 +234,7 @@ const DesignManagementPage = () => {
       return;
     }
     const body = buildBody(form);
+    setSaving(true);
     try {
       if (editing) {
         await interiorDesignService.update(editing.id, body);
@@ -241,9 +244,13 @@ const DesignManagementPage = () => {
         notifySuccess("Đã thêm concept thiết kế");
       }
       setIsOpen(false);
-      load();
-    } catch {
-      notifyError("Lưu thất bại");
+      await load();
+    } catch (err) {
+      notifyError(
+        err?.response?.data?.message || err?.message || "Lưu thất bại"
+      );
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -252,9 +259,11 @@ const DesignManagementPage = () => {
     try {
       await interiorDesignService.remove(id);
       notifySuccess("Đã xóa");
-      load();
-    } catch {
-      notifyError("Xóa thất bại");
+      await load();
+    } catch (err) {
+      notifyError(
+        err?.response?.data?.message || err?.message || "Xóa thất bại"
+      );
     }
   };
 
@@ -388,8 +397,7 @@ const DesignManagementPage = () => {
         </div>
       </div>
 
-      {isOpen && (
-        <div className="staff-modal-backdrop" onClick={() => setIsOpen(false)}>
+      <StaffModalPortal open={isOpen} onClose={() => setIsOpen(false)}>
           <div
             className="staff-modal staff-modal-lg staff-modal-tabs"
             onClick={(e) => e.stopPropagation()}
@@ -733,14 +741,14 @@ const DesignManagementPage = () => {
                   type="button"
                   className="staff-btn staff-btn-primary"
                   onClick={save}
+                  disabled={saving}
                 >
-                  Lưu
+                  {saving ? "Đang lưu…" : "Lưu"}
                 </button>
               </div>
             </div>
           </div>
-        </div>
-      )}
+        </StaffModalPortal>
     </div>
   );
 };

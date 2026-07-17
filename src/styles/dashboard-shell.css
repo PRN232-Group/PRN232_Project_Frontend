@@ -212,6 +212,19 @@
   border-color: var(--clay-dark) !important;
 }
 
+/* Ant Design Modal — mượt hơn trong dashboard */
+.ant-modal-mask {
+  backdrop-filter: blur(4px);
+}
+.ant-modal {
+  top: 64px !important;
+}
+.ant-modal .ant-modal-content {
+  border-radius: var(--radius-xl, 20px);
+  overflow: hidden;
+  box-shadow: var(--shadow-lg, 0 24px 60px rgba(44, 39, 35, 0.14));
+}
+
 /* Staff chat layout */
 .staff-chat {
   display: grid;

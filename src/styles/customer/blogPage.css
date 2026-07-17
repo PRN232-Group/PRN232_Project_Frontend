@@ -1,0 +1,245 @@
+/* Customer blog / inspiration */
+
+.blog-page {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 28px clamp(16px, 4vw, 28px) 64px;
+}
+
+.blog-hero h1 {
+  margin: 0 0 8px;
+  font-family: var(--font-serif);
+  font-size: clamp(1.8rem, 3vw, 2.4rem);
+  color: var(--ink);
+}
+
+.blog-hero p {
+  margin: 0 0 28px;
+  color: var(--muted);
+  max-width: 36rem;
+}
+
+.blog-status {
+  color: var(--muted);
+}
+
+.blog-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 18px;
+}
+
+.blog-card {
+  display: block;
+  text-decoration: none;
+  color: inherit;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
+  transition: transform 0.25s var(--ease), box-shadow 0.25s var(--ease);
+}
+
+.blog-card:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--shadow-md);
+}
+
+.blog-card img {
+  width: 100%;
+  aspect-ratio: 16 / 10;
+  object-fit: cover;
+  display: block;
+}
+
+.blog-card-body {
+  padding: 14px 16px 18px;
+}
+
+.blog-card-body span,
+.blog-type {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  padding: 0 10px;
+  border-radius: var(--radius-pill);
+  background: var(--clay-tint);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--clay-dark);
+}
+
+.blog-card-body span {
+  margin-bottom: 8px;
+}
+
+.blog-card-body h2 {
+  margin: 0;
+  font-family: var(--font-serif);
+  font-size: 1.15rem;
+  color: var(--ink);
+  line-height: 1.35;
+}
+
+.blog-detail-top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 14px;
+  margin-bottom: 14px;
+}
+
+.blog-detail h1 {
+  margin: 0 0 18px;
+  font-family: var(--font-serif);
+  font-size: clamp(1.6rem, 3vw, 2.2rem);
+  color: var(--ink);
+}
+
+.blog-cover {
+  width: 100%;
+  max-height: 420px;
+  object-fit: cover;
+  border-radius: var(--radius-lg);
+  margin-bottom: 22px;
+}
+
+.blog-body {
+  font-size: 1.02rem;
+  line-height: 1.75;
+  color: var(--body);
+  max-width: 42rem;
+}
+
+.blog-body p {
+  margin: 0 0 1.05rem;
+}
+
+.blog-body h3 {
+  margin: 1.4rem 0 0.55rem;
+  font-family: var(--font-serif);
+  font-size: 1.2rem;
+  color: var(--ink);
+}
+
+.blog-body ul {
+  margin: 0 0 1.1rem;
+  padding-left: 1.2rem;
+}
+
+.blog-body li {
+  margin-bottom: 0.4rem;
+}
+
+.blog-back {
+  display: inline-block;
+  margin: 0;
+  color: var(--clay-dark);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.blog-back:hover {
+  color: var(--clay);
+}
+
+/* Homepage strip */
+.home-blog {
+  padding: 8px clamp(20px, 5vw, 64px) clamp(40px, 5vw, 56px);
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.home-blog-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+.home-blog-head h2 {
+  margin: 0 0 4px;
+  font-family: var(--font-serif);
+  font-size: clamp(1.6rem, 3vw, 2.1rem);
+  color: var(--ink);
+}
+
+.home-blog-head h2 span {
+  color: var(--clay);
+}
+
+.home-blog-head p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.92rem;
+}
+
+.home-blog-more {
+  color: var(--clay-dark);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.home-blog-more:hover {
+  color: var(--clay);
+}
+
+.home-blog-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.home-blog-card {
+  display: flex;
+  flex-direction: column;
+  text-decoration: none;
+  color: inherit;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  transition: transform 0.22s ease, box-shadow 0.22s ease;
+}
+
+.home-blog-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-sm);
+}
+
+.home-blog-card img {
+  width: 100%;
+  aspect-ratio: 16 / 10;
+  object-fit: cover;
+}
+
+.home-blog-card > div {
+  padding: 12px 14px 16px;
+}
+
+.home-blog-card span {
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--clay-dark);
+}
+
+.home-blog-card h3 {
+  margin: 4px 0 0;
+  font-family: var(--font-serif);
+  font-size: 1.05rem;
+  color: var(--ink);
+  line-height: 1.35;
+}
+
+@media (max-width: 860px) {
+  .home-blog-grid {
+    grid-template-columns: 1fr;
+  }
+}

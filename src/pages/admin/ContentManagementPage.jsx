@@ -80,7 +80,8 @@ const ContentManagementPage = () => {
     <div className="staff-page">
       <h2>Nội dung / Blog</h2>
       <p className="staff-page-sub">
-        Bài viết có ảnh cover — khớp mock contents trên storefront.
+        Bài viết Blog / Guide / News — hiện ở trang chủ (Góc cảm hứng) và{" "}
+        <code>/blog</code> cho khách.
       </p>
 
       <div className="staff-toolbar">
@@ -188,6 +189,8 @@ const ContentManagementPage = () => {
         okText="Lưu"
         cancelText="Hủy"
         width={720}
+        zIndex={4100}
+        getContainer={() => document.body}
       >
         <Form form={form} layout="vertical" onFinish={handleSubmit}>
           <Form.Item

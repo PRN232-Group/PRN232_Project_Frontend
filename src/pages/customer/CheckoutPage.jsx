@@ -1,13 +1,21 @@
 import React, { useContext, useEffect, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { cartService, orderService } from "../../application/services";
 import UserContext from "../../contexts/UserContext";
 import { getLocalCart, setLocalCart } from "../../utils/cartLocal";
-import { notifySuccess, notifyError, notifyInfo, notifyWarn } from "../../application/services/notify";
+import {
+  notifySuccess,
+  notifyError,
+  notifyInfo,
+  notifyWarn,
+} from "../../application/services/notify";
 
 const CheckoutPage = () => {
   const { user } = useContext(UserContext);
   const navigate = useNavigate();
+  const location = useLocation();
+  const quoteCheckout = location.state?.fromQuotation || null;
+
   const [cartItems, setCartItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -22,14 +30,36 @@ const CheckoutPage = () => {
   useEffect(() => {
     if (!user) {
       notifyInfo("Vui lòng đăng nhập để thanh toán");
-      navigate("/login", { state: { from: "/checkout" }, replace: true });
+      navigate("/login", {
+        state: { from: quoteCheckout ? "/my-quotations" : "/checkout" },
+        replace: true,
+      });
       return;
     }
     setForm((f) => ({
       ...f,
-      fullName: user.name || f.fullName,
+      fullName: user.name || user.fullName || f.fullName,
       phone: user.phone || f.phone,
+      note: quoteCheckout
+        ? `Theo báo giá #${quoteCheckout.id}${quoteCheckout.title ? ` — ${quoteCheckout.title}` : ""}`
+        : f.note,
     }));
+
+    if (quoteCheckout?.items?.length) {
+      setCartItems(
+        quoteCheckout.items.map((i, idx) => ({
+          id: i.productId || idx,
+          productId: i.productId,
+          name: i.name || i.productName,
+          productName: i.productName || i.name,
+          price: i.price,
+          quantity: i.quantity,
+        }))
+      );
+      setLoading(false);
+      return;
+    }
+
     fetchCart();
   }, [user]);
 
@@ -56,11 +86,15 @@ const CheckoutPage = () => {
     }
   };
 
-  const getTotal = () =>
-    cartItems.reduce(
+  const getTotal = () => {
+    if (quoteCheckout?.amount != null && Number(quoteCheckout.amount) > 0) {
+      return Number(quoteCheckout.amount);
+    }
+    return cartItems.reduce(
       (sum, item) => sum + Number(item.price || 0) * Number(item.quantity || 0),
       0
     );
+  };
 
   const handleCheckout = async () => {
     if (!form.fullName || !form.phone || !form.address) {
@@ -68,26 +102,44 @@ const CheckoutPage = () => {
       return;
     }
     if (!cartItems.length) {
-      notifyWarn("Giỏ hàng trống");
+      notifyWarn("Không có sản phẩm để thanh toán");
       return;
     }
     try {
       setSubmitting(true);
+      const itemsPayload = cartItems.map((i) => ({
+        productId: Number(i.productId || i.id),
+        quantity: Number(i.quantity) || 1,
+        price: Number(i.price) || 0,
+      }));
       await orderService.checkout({
         shippingAddress: form.address,
         phone: form.phone,
         note: form.note,
-        customerInfo: form,
-        items: cartItems,
+        customerInfo: {
+          fullName: form.fullName,
+          phone: form.phone,
+          address: form.address,
+          note: form.note,
+          paymentMethod: form.paymentMethod,
+        },
+        items: itemsPayload,
         totalPrice: getTotal(),
       });
-      setLocalCart([]);
+      if (!quoteCheckout) {
+        setLocalCart([]);
+      }
       setCartItems([]);
-      notifySuccess("Đặt hàng thành công! Giỏ hàng đã được làm trống.");
+      notifySuccess(
+        quoteCheckout
+          ? `Đặt hàng theo báo giá #${quoteCheckout.id} thành công!`
+          : "Đặt hàng thành công! Giỏ hàng đã được làm trống."
+      );
       navigate("/orders", { replace: true });
     } catch (err) {
-      console.error(err);
-      notifyError("Thanh toán thất bại");
+      notifyError(
+        err?.response?.data?.message || err?.message || "Thanh toán thất bại"
+      );
     } finally {
       setSubmitting(false);
     }
@@ -97,15 +149,26 @@ const CheckoutPage = () => {
 
   return (
     <div className="checkout-page page">
-      <h2>Thanh toán</h2>
+      <h2>
+        {quoteCheckout
+          ? `Thanh toán báo giá #${quoteCheckout.id}`
+          : "Thanh toán"}
+      </h2>
+      {quoteCheckout && (
+        <p style={{ color: "var(--muted)", marginTop: -8, marginBottom: 18 }}>
+          Đơn dùng giá đã chốt trên báo giá
+          {quoteCheckout.title ? ` «${quoteCheckout.title}»` : ""} — không lấy
+          giá niêm yết trong giỏ thường.
+        </p>
+      )}
 
       {loading && <p>Đang tải...</p>}
 
       {!loading && cartItems.length === 0 && (
         <div className="empty-cart-panel">
           <p className="empty-cart-title">Không có sản phẩm để thanh toán</p>
-          <Link to="/products" className="checkout-btn">
-            Quay lại mua sắm
+          <Link to={quoteCheckout ? "/my-quotations" : "/products"} className="checkout-btn">
+            {quoteCheckout ? "Về báo giá của tôi" : "Quay lại mua sắm"}
           </Link>
         </div>
       )}
@@ -150,7 +213,7 @@ const CheckoutPage = () => {
             <h3>Đơn hàng</h3>
             <ul className="checkout-items">
               {cartItems.map((item) => (
-                <li key={item.id}>
+                <li key={item.id || item.productId}>
                   <span>
                     {item.name || item.productName} × {item.quantity}
                   </span>
@@ -167,8 +230,9 @@ const CheckoutPage = () => {
               Tổng: <b>{getTotal().toLocaleString("vi-VN")} ₫</b>
             </p>
             <p className="checkout-hint">
-              Sau khi đặt thành công, giỏ hàng sẽ trống — xem đơn tại mục Đơn
-              hàng.
+              {quoteCheckout
+                ? "Tổng theo giá báo giá đã duyệt. Sau khi đặt, xem đơn tại mục Đơn hàng."
+                : "Sau khi đặt thành công, giỏ hàng sẽ trống — xem đơn tại mục Đơn hàng."}
             </p>
             <button
               type="button"

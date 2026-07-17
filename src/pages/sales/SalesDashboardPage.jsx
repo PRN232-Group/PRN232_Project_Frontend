@@ -61,14 +61,14 @@ const SalesDashboardPage = () => {
           className="staff-btn staff-btn-primary"
           onClick={() => navigate("/sales/quotations")}
         >
-          Yêu cầu báo giá
+          Báo giá (inbox)
         </button>
         <button
           type="button"
           className="staff-btn staff-btn-ghost"
-          onClick={() => navigate("/sales/quotation-approval")}
+          onClick={() => navigate("/sales/quotations?tab=quotes")}
         >
-          Duyệt báo giá
+          Duyệt nội bộ
         </button>
         <button
           type="button"

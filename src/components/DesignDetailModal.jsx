@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { Link } from "react-router-dom";
 
 const fmt = (n) =>
@@ -14,17 +15,46 @@ const CATEGORY_LABELS = {
   Kitchen: "Bếp",
 };
 
-export default function DesignDetailModal({ design, loading, onClose }) {
+const EXIT_MS = 300;
+
+export default function DesignDetailModal({
+  open = true,
+  design: designProp,
+  loading: loadingProp,
+  onClose,
+}) {
   const [heroSrc, setHeroSrc] = useState("");
   const scrollRef = useRef(null);
   const productsRef = useRef(null);
+  const [mounted, setMounted] = useState(!!open);
+  const [visible, setVisible] = useState(false);
+  const cached = useRef({ design: designProp, loading: loadingProp });
+
+  if (open) cached.current = { design: designProp, loading: loadingProp };
+  const design = open ? designProp : cached.current.design;
+  const loading = open ? loadingProp : cached.current.loading;
 
   useEffect(() => {
+    if (open) {
+      setMounted(true);
+      const id = requestAnimationFrame(() => {
+        requestAnimationFrame(() => setVisible(true));
+      });
+      return () => cancelAnimationFrame(id);
+    }
+    setVisible(false);
+    const t = setTimeout(() => setMounted(false), EXIT_MS);
+    return () => clearTimeout(t);
+  }, [open]);
+
+  useEffect(() => {
+    if (!mounted) return undefined;
+    const prev = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     return () => {
-      document.body.style.overflow = "";
+      document.body.style.overflow = prev;
     };
-  }, []);
+  }, [mounted]);
 
   useEffect(() => {
     if (design) {
@@ -33,6 +63,7 @@ export default function DesignDetailModal({ design, loading, onClose }) {
     }
   }, [design]);
 
+  if (typeof document === "undefined" || !mounted) return null;
   if (!design && !loading) return null;
 
   const categoryLabel =
@@ -59,9 +90,9 @@ export default function DesignDetailModal({ design, loading, onClose }) {
     productsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
   };
 
-  return (
+  return createPortal(
     <div
-      className="design-modal-overlay"
+      className={`design-modal-overlay ${visible ? "is-open" : "is-closing"}`}
       onClick={onClose}
       role="presentation"
     >
@@ -81,7 +112,7 @@ export default function DesignDetailModal({ design, loading, onClose }) {
           ×
         </button>
 
-        {loading ? (
+        {loading || !design ? (
           <div className="design-modal-loading">Đang tải chi tiết thiết kế…</div>
         ) : (
           <>
@@ -355,6 +386,7 @@ export default function DesignDetailModal({ design, loading, onClose }) {
           </>
         )}
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

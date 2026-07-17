@@ -1,8 +1,15 @@
-import React, { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import React, { useContext, useEffect, useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import "../../styles/customer/homePage.css";
+import "../../styles/customer/blogPage.css";
 import DesignStoriesCarousel from "../../components/DesignStoriesCarousel";
-import { interiorDesignService } from "../../application/services";
+import {
+  contentService,
+  interiorDesignService,
+  productService,
+} from "../../application/services";
+import UserContext from "../../contexts/UserContext";
+import { formatCountThreshold, normalizeRole } from "../../domain/roles";
 
 const CATEGORY_LABELS = {
   Living: "Phòng khách",
@@ -14,84 +21,110 @@ const CATEGORY_LABELS = {
 const FALLBACK_IMG =
   "https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?w=800&q=80";
 
+const HERO_CTAS = {
+  guest: [
+    { label: "Khám phá bộ sưu tập", to: "/products", primary: true },
+    { label: "Xem concept thiết kế", to: "/design", primary: false },
+  ],
+  customer: [
+    { label: "Khám phá bộ sưu tập", to: "/products", primary: true },
+    { label: "Xem concept thiết kế", to: "/design", primary: false },
+  ],
+  sales: [
+    { label: "Quản lý đơn hàng", to: "/sales/orders", primary: true },
+    { label: "Yêu cầu thiết kế", to: "/sales/design-requests", primary: false },
+  ],
+  manager: [
+    { label: "Quản lý sản phẩm", to: "/manager/products", primary: true },
+    { label: "Quản lý concept", to: "/manager/designs", primary: false },
+  ],
+  admin: [
+    { label: "Quản trị hệ thống", to: "/admin", primary: true },
+    { label: "Quản lý concept", to: "/manager/designs", primary: false },
+  ],
+};
+
+const ABOUT_CTA = {
+  guest: { label: "Khám phá thiết kế →", to: "/design" },
+  customer: { label: "Khám phá thiết kế →", to: "/design" },
+  sales: { label: "Xử lý yêu cầu thiết kế →", to: "/sales/design-requests" },
+  manager: { label: "Quản lý concept →", to: "/manager/designs" },
+  admin: { label: "Quản lý concept →", to: "/manager/designs" },
+};
+
+const TYPE_LABEL = {
+  Blog: "Blog",
+  Guide: "Hướng dẫn",
+  News: "Tin tức",
+};
+
 const HomePage = () => {
   const navigate = useNavigate();
+  const { user } = useContext(UserContext);
+  const roleKey = user ? normalizeRole(user.role) : "guest";
+  const isStaff =
+    roleKey === "sales" || roleKey === "manager" || roleKey === "admin";
+  const heroBtns = HERO_CTAS[roleKey] || HERO_CTAS.guest;
+  const aboutCta = ABOUT_CTA[roleKey] || ABOUT_CTA.guest;
+
   const [stories, setStories] = useState([]);
+  const [articles, setArticles] = useState([]);
+  const [productCount, setProductCount] = useState(0);
+  const [designCount, setDesignCount] = useState(0);
 
   useEffect(() => {
-    const loadStories = async () => {
+    const load = async () => {
       try {
-        const res = await interiorDesignService.getAll();
-        const designs = (res?.data || []).filter((d) => d.isPublished !== false);
-        if (designs.length) {
-          setStories(
-            designs.map((d) => ({
-              id: d.id,
-              designId: d.id,
-              title: d.title,
-              category: CATEGORY_LABELS[d.category] || d.category,
-              excerpt: d.description
-                ? `${d.description.slice(0, 88)}${d.description.length > 88 ? "…" : ""}`
+        const [dRes, pRes, cRes] = await Promise.all([
+          interiorDesignService.getAll(),
+          productService.getAll(),
+          contentService.getAll().catch(() => ({ data: [] })),
+        ]);
+        const designs = (dRes?.data || []).filter(
+          (d) => d.isPublished !== false
+        );
+        setDesignCount(designs.length);
+        setProductCount((pRes?.data || []).length);
+        setArticles(
+          (cRes?.data || [])
+            .filter((c) => c.isPublished !== false)
+            .slice(0, 3)
+        );
+        setStories(
+          designs.map((d) => ({
+            id: d.id,
+            designId: d.id,
+            title: d.title,
+            category: CATEGORY_LABELS[d.category] || d.category,
+            excerpt: d.description
+              ? `${d.description.slice(0, 88)}${d.description.length > 88 ? "…" : ""}`
+              : isStaff
+                ? "Mở khu vực quản lý →"
                 : "Khám phá concept & sản phẩm",
-              imageUrl: d.imageUrl || d.image || FALLBACK_IMG,
-            }))
-          );
-          return;
-        }
+            imageUrl: d.imageUrl || d.image || FALLBACK_IMG,
+          }))
+        );
       } catch {
-        /* use fallback below */
+        setStories([]);
+        setArticles([]);
+        setProductCount(0);
+        setDesignCount(0);
       }
-
-      setStories([
-        {
-          id: 1,
-          designId: 1,
-          title: "Phòng khách Japandi",
-          category: "Phòng khách",
-          excerpt: "Tone sáng, gỗ ấm — concept đầy đủ vật liệu & sản phẩm",
-          imageUrl:
-            "https://images.unsplash.com/photo-1618221195710-dd6b41faaea6?w=800&q=80",
-        },
-        {
-          id: 2,
-          designId: 2,
-          title: "Phòng ngủ tối giản",
-          category: "Phòng ngủ",
-          excerpt: "Giường thấp, ánh sáng gián tiếp cho giấc ngủ sâu",
-          imageUrl:
-            "https://images.unsplash.com/photo-1631049307264-da0ec9d70304?w=800&q=80",
-        },
-        {
-          id: 3,
-          designId: 3,
-          title: "Góc làm việc tại nhà",
-          category: "Làm việc",
-          excerpt: "Bàn gỗ + ghế ergonomic, setup WFH chuyên nghiệp",
-          imageUrl:
-            "https://images.unsplash.com/photo-1497366216548-37526070297c?w=800&q=80",
-        },
-        {
-          id: 4,
-          designId: 4,
-          title: "Bếp mở Scandinavian",
-          category: "Bếp",
-          excerpt: "Tủ matte, mặt đá quartz, quy trình bếp chuẩn",
-          imageUrl:
-            "https://images.unsplash.com/photo-1556911220-bff31c812dba?w=800&q=80",
-        },
-        {
-          id: 5,
-          designId: 5,
-          title: "Phòng khách ấm áp",
-          category: "Phòng khách",
-          excerpt: "Kệ walnut, sofa linen & đèn brass",
-          imageUrl:
-            "https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?w=800&q=80",
-        },
-      ]);
     };
-    loadStories();
-  }, []);
+    load();
+  }, [isStaff]);
+
+  const onStoryClick = (item) => {
+    if (roleKey === "manager" || roleKey === "admin") {
+      navigate("/manager/designs");
+      return;
+    }
+    if (roleKey === "sales") {
+      navigate("/sales/design-requests");
+      return;
+    }
+    navigate("/design", { state: { openId: item.designId ?? item.id } });
+  };
 
   return (
     <div className="interior">
@@ -108,16 +141,16 @@ const HomePage = () => {
           </p>
 
           <div className="hero-btns">
-            <button type="button" onClick={() => navigate("/products")}>
-              Khám phá bộ sưu tập
-            </button>
-            <button
-              type="button"
-              className="ghost"
-              onClick={() => navigate("/design")}
-            >
-              Xem concept thiết kế
-            </button>
+            {heroBtns.map((btn) => (
+              <button
+                key={btn.to + btn.label}
+                type="button"
+                className={btn.primary ? undefined : "ghost"}
+                onClick={() => navigate(btn.to)}
+              >
+                {btn.label}
+              </button>
+            ))}
           </div>
         </div>
 
@@ -150,14 +183,63 @@ const HomePage = () => {
 
       <section className="gallery gallery-carousel">
         <h2>
-          Latest <span>Design Stories</span>
+          Concept <span>nổi bật</span>
         </h2>
         <p className="gallery-sub">
-          Tự động lướt mỗi vài giây — nhấn để xem chi tiết concept &amp; sản
-          phẩm
+          {isStaff
+            ? "Nhấn concept để mở khu vực quản lý tương ứng"
+            : "Tự động lướt — nhấn để xem chi tiết concept & sản phẩm liên quan"}
         </p>
-        <DesignStoriesCarousel items={stories} autoPlayMs={5500} />
+        {stories.length > 0 ? (
+          <DesignStoriesCarousel
+            items={stories}
+            autoPlayMs={5500}
+            onStoryClick={onStoryClick}
+          />
+        ) : (
+          <p className="home-empty-note">
+            Hiện chưa có concept đang hiển thị. Vui lòng quay lại sau.
+          </p>
+        )}
       </section>
+
+      {articles.length > 0 && (
+        <section className="home-blog">
+          <div className="home-blog-head">
+            <div>
+              <h2>
+                Góc <span>cảm hứng</span>
+              </h2>
+              <p>Bài viết &amp; hướng dẫn từ Interior Studio</p>
+            </div>
+            <Link to="/blog" className="home-blog-more">
+              Xem tất cả →
+            </Link>
+          </div>
+          <div className="home-blog-grid">
+            {articles.map((a) => (
+              <Link
+                key={a.id}
+                to={`/blog/${a.slug}`}
+                className="home-blog-card"
+              >
+                <img
+                  src={a.coverUrl || FALLBACK_IMG}
+                  alt=""
+                  loading="lazy"
+                  onError={(e) => {
+                    e.currentTarget.src = FALLBACK_IMG;
+                  }}
+                />
+                <div>
+                  <span>{TYPE_LABEL[a.type] || a.type}</span>
+                  <h3>{a.title}</h3>
+                </div>
+              </Link>
+            ))}
+          </div>
+        </section>
+      )}
 
       <section className="about">
         <div className="about-img">
@@ -183,20 +265,20 @@ const HomePage = () => {
           <button
             type="button"
             className="about-cta"
-            onClick={() => navigate("/design")}
+            onClick={() => navigate(aboutCta.to)}
           >
-            Khám phá thiết kế →
+            {aboutCta.label}
           </button>
         </div>
       </section>
 
       <section className="stats">
         <div>
-          <strong>6+</strong>
+          <strong>{formatCountThreshold(productCount)}</strong>
           <span>Dòng sản phẩm</span>
         </div>
         <div>
-          <strong>5</strong>
+          <strong>{designCount}</strong>
           <span>Concept thiết kế</span>
         </div>
         <div>

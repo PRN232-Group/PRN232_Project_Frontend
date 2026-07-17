@@ -11,6 +11,7 @@ const WORKSPACE = {
     links: [
       { label: "Giỏ hàng", href: "/cart" },
       { label: "Đơn hàng của tôi", href: "/orders" },
+      { label: "Báo giá của tôi", href: "/my-quotations" },
       { label: "Hỗ trợ / Tin nhắn", href: "/chat" },
     ],
   },
@@ -19,7 +20,8 @@ const WORKSPACE = {
     links: [
       { label: "Bảng điều khiển", href: "/sales" },
       { label: "Đơn hàng", href: "/sales/orders" },
-      { label: "Yêu cầu báo giá", href: "/sales/quotations" },
+      { label: "Báo giá", href: "/sales/quotations" },
+      { label: "Yêu cầu thiết kế", href: "/sales/design-requests" },
       { label: "Chăm sóc khách", href: "/sales/chat" },
     ],
   },
@@ -38,7 +40,7 @@ const WORKSPACE = {
     links: [
       { label: "Bảng điều khiển", href: "/admin" },
       { label: "Người dùng", href: "/admin/users" },
-      { label: "Đơn hàng (Sales)", href: "/sales/orders" },
+      { label: "Concept thiết kế", href: "/manager/designs" },
       { label: "Sản phẩm (QL)", href: "/manager/products" },
     ],
   },
@@ -152,6 +154,7 @@ const Header = () => {
         { label: "Trang chủ", href: "/" },
         { label: "Sản phẩm", href: "/products" },
         { label: "Concept thiết kế", href: "/design" },
+        { label: "Cảm hứng", href: "/blog" },
         ...(user ? [{ label: "Đơn hàng", href: "/orders" }] : []),
       ]
     : [

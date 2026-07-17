@@ -1,10 +1,11 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { orderService } from "../../application/services";
 import {
-  ORDER_STATUS_OPTIONS,
   normalizeOrderStatus,
   orderStatusCssClass,
   orderStatusLabel,
+  isTerminalOrderStatus,
+  allowedOrderStatusOptions,
 } from "../../domain/orderStatus";
 import { notifySuccess, notifyError } from "../../application/services/notify";
 import { formatVnd, discountPct } from "../../domain/roles";
@@ -46,16 +47,32 @@ const SalesOrderManagementPage = () => {
     setStatus(normalizeOrderStatus(o.status));
   };
 
+  const locked = selected ? isTerminalOrderStatus(selected.status) : false;
+  const statusOptions = useMemo(
+    () => (selected ? allowedOrderStatusOptions(selected.status) : []),
+    [selected]
+  );
+
   const updateStatus = async () => {
-    if (!selected) return;
+    if (!selected || locked) return;
     const next = normalizeOrderStatus(status);
+    if (next === normalizeOrderStatus(selected.status)) {
+      notifySuccess("Trạng thái không đổi");
+      return;
+    }
     try {
       await orderService.updateSalesOrder(selected.id, { status: next });
+      const updated = { ...selected, status: next };
       setOrders((prev) =>
-        prev.map((o) => (o.id === selected.id ? { ...o, status: next } : o))
+        prev.map((o) => (o.id === selected.id ? updated : o))
       );
-      setSelected((s) => (s ? { ...s, status: next } : s));
-      notifySuccess("Đã cập nhật trạng thái");
+      setSelected(updated);
+      setStatus(next);
+      notifySuccess(
+        isTerminalOrderStatus(next)
+          ? `Đã lưu — đơn ${orderStatusLabel(next).toLowerCase()}, không sửa tiếp`
+          : "Đã cập nhật trạng thái"
+      );
     } catch {
       notifyError("Cập nhật thất bại");
     }
@@ -206,25 +223,44 @@ const SalesOrderManagementPage = () => {
 
                 <div className="staff-field" style={{ marginTop: 14 }}>
                   <label>Trạng thái</label>
-                  <select
-                    value={status}
-                    onChange={(e) => setStatus(e.target.value)}
-                  >
-                    {ORDER_STATUS_OPTIONS.map((s) => (
-                      <option key={s} value={s}>
-                        {orderStatusLabel(s)}
-                      </option>
-                    ))}
-                  </select>
+                  {locked ? (
+                    <p style={{ margin: "8px 0 0" }}>
+                      <span
+                        className={`status ${orderStatusCssClass(selected.status)}`}
+                      >
+                        {orderStatusLabel(selected.status)}
+                      </span>
+                      <span
+                        className="staff-page-sub"
+                        style={{ display: "block", marginTop: 8 }}
+                      >
+                        Đơn đã kết thúc — không đổi trạng thái nữa.
+                      </span>
+                    </p>
+                  ) : (
+                    <select
+                      value={status}
+                      onChange={(e) => setStatus(e.target.value)}
+                    >
+                      {statusOptions.map((s) => (
+                        <option key={s} value={s}>
+                          {orderStatusLabel(s)}
+                        </option>
+                      ))}
+                    </select>
+                  )}
                 </div>
-                <button
-                  type="button"
-                  className="staff-btn staff-btn-primary"
-                  style={{ marginTop: 10 }}
-                  onClick={updateStatus}
-                >
-                  Lưu trạng thái
-                </button>
+                {!locked && (
+                  <button
+                    type="button"
+                    className="staff-btn staff-btn-primary"
+                    style={{ marginTop: 10 }}
+                    onClick={updateStatus}
+                    disabled={status === normalizeOrderStatus(selected.status)}
+                  >
+                    Lưu trạng thái
+                  </button>
+                )}
               </div>
             </>
           )}

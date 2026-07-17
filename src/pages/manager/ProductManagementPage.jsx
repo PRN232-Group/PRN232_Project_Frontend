@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { productService, categoryService } from "../../application/services";
 import { notifySuccess, notifyError } from "../../application/services/notify";
 import { formatVnd, discountPct } from "../../domain/roles";
+import StaffModalPortal from "../../components/StaffModalPortal";
 
 const emptyForm = {
   name: "",
@@ -46,15 +47,6 @@ const ProductManagementPage = () => {
   useEffect(() => {
     setPreviewOk(true);
   }, [form.imageUrl]);
-
-  useEffect(() => {
-    if (!isOpen) return undefined;
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    return () => {
-      document.body.style.overflow = prev;
-    };
-  }, [isOpen]);
 
   const load = async () => {
     try {
@@ -293,8 +285,7 @@ const ProductManagementPage = () => {
         </div>
       </div>
 
-      {isOpen && (
-        <div className="staff-modal-backdrop" onClick={() => setIsOpen(false)}>
+      <StaffModalPortal open={isOpen} onClose={() => setIsOpen(false)}>
           <div
             className="staff-modal staff-modal-lg"
             onClick={(e) => e.stopPropagation()}
@@ -400,10 +391,23 @@ const ProductManagementPage = () => {
                         name="imageUrl"
                         value={form.imageUrl}
                         onChange={onField}
-                        placeholder="https://… (ảnh Unsplash / CDN)"
+                        placeholder="https://images.unsplash.com/photo-…"
                       />
                       <p className="staff-field-hint">
-                        Dán URL ảnh; preview hiện bên trái như storefront.
+                        Dán URL Unsplash/CDN. Gợi ý mock: sofa{" "}
+                        <button
+                          type="button"
+                          className="staff-linkish"
+                          onClick={() =>
+                            setForm((f) => ({
+                              ...f,
+                              imageUrl:
+                                "https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=800&q=80",
+                            }))
+                          }
+                        >
+                          dán mẫu
+                        </button>
                       </p>
                     </div>
                   </div>
@@ -516,8 +520,7 @@ const ProductManagementPage = () => {
               </button>
             </div>
           </div>
-        </div>
-      )}
+        </StaffModalPortal>
     </div>
   );
 };

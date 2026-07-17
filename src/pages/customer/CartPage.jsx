@@ -2,12 +2,9 @@ import React, { useContext, useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { cartService } from "../../application/services";
 import UserContext from "../../contexts/UserContext";
-import {
-  getLocalCart,
-  setLocalCart,
-  notifyCartUpdated,
-} from "../../utils/cartLocal";
-import { notifyInfo } from "../../application/services/notify";
+import { getLocalCart, setLocalCart } from "../../utils/cartLocal";
+import { notifyInfo, notifyError } from "../../application/services/notify";
+import QuoteRequestModal from "../../components/QuoteRequestModal";
 
 const CartPage = () => {
   const { user } = useContext(UserContext);
@@ -15,6 +12,7 @@ const CartPage = () => {
   const [cartItems, setCartItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [justCheckedOut, setJustCheckedOut] = useState(false);
+  const [quoteOpen, setQuoteOpen] = useState(false);
 
   useEffect(() => {
     fetchCart();
@@ -49,6 +47,7 @@ const CartPage = () => {
 
   const updateQuantity = async (id, newQty) => {
     if (newQty < 1) return;
+    const prev = cartItems;
     const updated = cartItems.map((item) =>
       item.id === id ? { ...item, quantity: newQty } : item
     );
@@ -57,8 +56,14 @@ const CartPage = () => {
     if (user) {
       try {
         await cartService.update(id, { quantity: newQty });
-      } catch {
-        /* ignore offline */
+      } catch (err) {
+        setCartItems(prev);
+        setLocalCart(prev);
+        notifyError(
+          err?.response?.data?.message ||
+            err?.message ||
+            "Không cập nhật được số lượng — có thể đã hết hàng"
+        );
       }
     }
   };
@@ -92,6 +97,36 @@ const CartPage = () => {
     navigate("/checkout");
   };
 
+  const openQuote = () => {
+    if (!cartItems.length) return;
+    if (!user) {
+      notifyInfo("Vui lòng đăng nhập để gửi yêu cầu báo giá");
+      navigate("/login", { state: { from: "/cart" } });
+      return;
+    }
+    setQuoteOpen(true);
+  };
+
+  const quoteItems = (() => {
+    const map = new Map();
+    for (const i of cartItems) {
+      const pid = Number(i.productId || i.id);
+      if (!Number.isFinite(pid) || pid <= 0) continue;
+      const qty = Math.max(1, Number(i.quantity) || 1);
+      map.set(pid, (map.get(pid) || 0) + qty);
+    }
+    return [...map.entries()].map(([productId, quantity]) => ({
+      productId,
+      quantity,
+    }));
+  })();
+
+  const quoteProductIds = quoteItems.map((i) => i.productId);
+
+  const quoteDesc = cartItems
+    .map((i) => `${i.name || i.productName} × ${i.quantity}`)
+    .join("; ");
+
   return (
     <div className="cart-page page">
       <h2>Giỏ hàng</h2>
@@ -109,8 +144,9 @@ const CartPage = () => {
         <div className="empty-cart-panel">
           <p className="empty-cart-title">Giỏ hàng đang trống</p>
           <p className="empty-cart-desc">
-            Thêm sản phẩm từ trang Sản phẩm — bạn có thể chọn hàng trước, đăng
-            nhập khi thanh toán.
+            Thêm sản phẩm rồi thanh toán niêm yết, hoặc gửi yêu cầu báo giá cả
+            giỏ. Phản hồi Sales xem tại{" "}
+            <Link to="/my-quotations">Báo giá của tôi</Link>.
           </p>
           <Link to="/products" className="checkout-btn">
             Xem sản phẩm
@@ -136,6 +172,17 @@ const CartPage = () => {
                   <tr key={item.id}>
                     <td className="product-info">
                       {item.name || item.productName}
+                      {item.fromQuotationId ? (
+                        <div
+                          style={{
+                            fontSize: "0.78rem",
+                            color: "var(--muted)",
+                            marginTop: 4,
+                          }}
+                        >
+                          Giá theo báo giá #{item.fromQuotationId}
+                        </div>
+                      ) : null}
                     </td>
                     <td>
                       {Number(item.price || 0).toLocaleString("vi-VN")} ₫
@@ -186,22 +233,45 @@ const CartPage = () => {
             <h3>
               Tổng: {getTotalPrice().toLocaleString("vi-VN")} ₫
             </h3>
-            <button
-              type="button"
-              className="checkout-btn"
-              onClick={handleCheckout}
-            >
-              {user ? "Thanh toán" : "Đăng nhập để thanh toán"}
-            </button>
+            <div className="cart-summary-actions">
+              <button
+                type="button"
+                className="checkout-btn checkout-btn--ghost"
+                onClick={openQuote}
+              >
+                Gửi yêu cầu báo giá
+              </button>
+              <button
+                type="button"
+                className="checkout-btn"
+                onClick={handleCheckout}
+              >
+                {user ? "Thanh toán" : "Đăng nhập để thanh toán"}
+              </button>
+            </div>
           </div>
+          <p style={{ marginTop: 12, color: "var(--muted)", fontSize: 14 }}>
+            Giá trong giỏ là niêm yết. Sau khi Sales duyệt báo giá, vào{" "}
+            <Link to="/my-quotations">Báo giá của tôi</Link> để xem phản hồi và
+            thanh toán theo giá đã chốt (hoặc áp dụng vào giỏ).
+          </p>
           {!user && (
-            <p style={{ marginTop: 12, color: "var(--muted)", fontSize: 14 }}>
-              Bạn đang mua với tư cách khách — giỏ lưu trên máy này. Thanh toán
-              cần đăng nhập tài khoản Khách hàng.
+            <p style={{ marginTop: 8, color: "var(--muted)", fontSize: 14 }}>
+              Bạn đang mua với tư cách khách — giỏ lưu trên máy này. Thanh toán /
+              báo giá cần đăng nhập tài khoản Khách hàng.
             </p>
           )}
         </>
       )}
+
+      <QuoteRequestModal
+        open={quoteOpen}
+        onClose={() => setQuoteOpen(false)}
+        productIds={quoteProductIds}
+        items={quoteItems}
+        defaultTitle="Báo giá theo giỏ hàng"
+        defaultDescription={quoteDesc}
+      />
     </div>
   );
 };

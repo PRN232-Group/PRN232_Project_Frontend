@@ -13,7 +13,6 @@ import {
   RiseOutlined,
   BarChartOutlined,
   FileDoneOutlined,
-  CheckSquareOutlined,
   HighlightOutlined,
   MessageOutlined,
   MenuUnfoldOutlined,
@@ -27,7 +26,12 @@ import {
 } from "@ant-design/icons";
 import UserContext from "../../contexts/UserContext";
 import { logout } from "../../application/services/authService";
-import { normalizeRole } from "../../domain/roles";
+import { permissionService } from "../../application/services";
+import {
+  normalizeRole,
+  filterMenuByPermissions,
+} from "../../domain/roles";
+import { setUser as persistUser } from "../../infrastructure/storage/authStorage";
 
 const { Sider, Content } = Layout;
 const { useBreakpoint } = Grid;
@@ -147,12 +151,7 @@ const MENUS = {
           {
             key: "/sales/quotations",
             icon: <FileTextOutlined />,
-            label: <Link to="/sales/quotations">Yêu cầu báo giá</Link>,
-          },
-          {
-            key: "/sales/quotation-approval",
-            icon: <CheckSquareOutlined />,
-            label: <Link to="/sales/quotation-approval">Duyệt báo giá</Link>,
+            label: <Link to="/sales/quotations">Báo giá</Link>,
           },
           {
             key: "/sales/design-requests",
@@ -224,12 +223,7 @@ const MENUS = {
       {
         key: "/sales/quotations",
         icon: <FileTextOutlined />,
-        label: <Link to="/sales/quotations">Yêu cầu báo giá</Link>,
-      },
-      {
-        key: "/sales/quotation-approval",
-        icon: <CheckSquareOutlined />,
-        label: <Link to="/sales/quotation-approval">Duyệt báo giá</Link>,
+        label: <Link to="/sales/quotations">Báo giá</Link>,
       },
       {
         key: "/sales/design-requests",
@@ -279,27 +273,61 @@ const DashboardShell = ({ section = "admin" }) => {
   const [openKeys, setOpenKeys] = useState([]);
 
   const roleKey = normalizeRole(user?.role);
+  const hasSubmenus = roleKey === "admin";
   const config = useMemo(() => {
     if (roleKey === "admin") return MENUS.admin;
     return MENUS[section] || MENUS.admin;
   }, [roleKey, section]);
 
-  const itemKeys = useMemo(() => flattenMenuKeys(config.items), [config]);
-  const hasSubmenus = roleKey === "admin";
+  const filteredItems = useMemo(
+    () => filterMenuByPermissions(config.items, user?.permissions),
+    [config.items, user?.permissions]
+  );
+
+  const itemKeys = useMemo(
+    () => flattenMenuKeys(filteredItems),
+    [filteredItems]
+  );
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await permissionService.getMine();
+        const pageKeys = res.data?.pageKeys || [];
+        if (cancelled) return;
+        setUser((prev) => {
+          if (!prev) return prev;
+          const same =
+            Array.isArray(prev.permissions) &&
+            prev.permissions.length === pageKeys.length &&
+            prev.permissions.every((k, i) => k === pageKeys[i]);
+          if (same) return prev;
+          const next = { ...prev, permissions: pageKeys };
+          persistUser(next);
+          return next;
+        });
+      } catch {
+        /* keep cached */
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [location.pathname, setUser]);
 
   useEffect(() => {
     setDrawerOpen(false);
   }, [location.pathname]);
 
-  // Mở đúng nhóm chứa trang hiện tại (accordion: 1 nhóm)
   useEffect(() => {
     if (!hasSubmenus) {
       setOpenKeys([]);
       return;
     }
-    const active = findSubmenuForPath(config.items, location.pathname);
+    const active = findSubmenuForPath(filteredItems, location.pathname);
     setOpenKeys(active ? [active] : []);
-  }, [location.pathname, hasSubmenus, config.items]);
+  }, [location.pathname, hasSubmenus, filteredItems]);
 
   const selectedKey =
     itemKeys
@@ -326,7 +354,7 @@ const DashboardShell = ({ section = "admin" }) => {
   };
 
   const menuItems = [
-    ...config.items,
+    ...filteredItems,
     {
       type: "divider",
       style: { borderColor: "rgba(255,255,255,0.12)", margin: "8px 12px" },

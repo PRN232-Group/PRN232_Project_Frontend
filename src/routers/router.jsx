@@ -22,6 +22,7 @@ const load = (Comp) => (
 const LoginPage = lazy(() => import("../pages/customer/loginPage"));
 const RegisterPage = lazy(() => import("../pages/customer/registerPage"));
 const ForgotPasswordPage = lazy(() => import("../pages/customer/ForgotPasswordPage"));
+const ResetPasswordPage = lazy(() => import("../pages/customer/ResetPasswordPage"));
 
 /* ===== CUSTOMER ===== */
 const HomePage = lazy(() => import("../pages/customer/homePage"));
@@ -35,7 +36,14 @@ const CheckoutPage = lazy(() => import("../pages/customer/CheckoutPage"));
 const OrderListPage = lazy(() => import("../pages/customer/OrderListPage"));
 const OrderDetailPage = lazy(() => import("../pages/customer/OrderDetailPage"));
 const CustomerChatPage = lazy(() => import("../pages/customer/CustomerChatPage"));
+const MyQuotationsPage = lazy(() => import("../pages/customer/MyQuotationsPage"));
 const ProductReviewPage = lazy(() => import("../pages/customer/ProductReviewPage"));
+const BlogListPage = lazy(() =>
+  import("../pages/customer/BlogPages").then((m) => ({ default: m.BlogListPage }))
+);
+const BlogDetailPage = lazy(() =>
+  import("../pages/customer/BlogPages").then((m) => ({ default: m.BlogDetailPage }))
+);
 
 /* ===== ADMIN ===== */
 const AdminDashboardPage = lazy(() => import("../pages/admin/adminDashboardPage"));
@@ -66,6 +74,7 @@ export const router = createBrowserRouter([
   { path: "/login", element: load(LoginPage) },
   { path: "/register", element: load(RegisterPage) },
   { path: "/forgot-password", element: load(ForgotPasswordPage) },
+  { path: "/reset-password", element: load(ResetPasswordPage) },
 
   /* ===== CUSTOMER ===== */
   {
@@ -77,12 +86,15 @@ export const router = createBrowserRouter([
       { path: "products/:id", element: load(ProductDetailPage) },
       { path: "search", element: load(ProductSearchPage) },
       { path: "design", element: load(InteriorDesignPage) },
+      { path: "blog", element: load(BlogListPage) },
+      { path: "blog/:slug", element: load(BlogDetailPage) },
       { path: "profile", element: load(ProfilePage) },
       { path: "cart", element: load(CartPage) },
       { path: "checkout", element: load(CheckoutPage) },
       { path: "orders", element: load(OrderListPage) },
       { path: "orders/:id", element: load(OrderDetailPage) },
       { path: "chat", element: load(CustomerChatPage) },
+      { path: "my-quotations", element: load(MyQuotationsPage) },
       { path: "review", element: load(ProductReviewPage) },
       { path: "products/:id/review", element: load(ProductReviewPage) },
     ],

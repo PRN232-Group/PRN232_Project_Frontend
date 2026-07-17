@@ -4,34 +4,29 @@ import "@fortawesome/fontawesome-free/css/all.min.css";
 import "../../styles/customer/authPage.css";
 import UserContext from "../../contexts/UserContext";
 import { login as loginUseCase } from "../../application/services/authService";
-import { ROLES } from "../../domain/roles";
 import { isMockEnabled } from "../../infrastructure/mock/installMockApi";
 
-/** Mock accounts — khớp src/infrastructure/mock/data.js users */
+/** Quick-fill khi mock ON — chỉ điền email/password, role lấy từ API/mock user */
 const MOCK_ACCOUNTS = [
   {
-    role: ROLES.CUSTOMER,
     label: "Khách hàng",
     email: "an@example.com",
     password: "123456",
     hint: "Nguyễn Văn An",
   },
   {
-    role: ROLES.SALES,
     label: "Sales",
     email: "sales@interior.studio",
     password: "123456",
     hint: "Sales Minh",
   },
   {
-    role: ROLES.MANAGER,
     label: "Quản lý",
     email: "manager@interior.studio",
     password: "123456",
     hint: "Manager Lan",
   },
   {
-    role: ROLES.ADMIN,
     label: "Admin",
     email: "admin@interior.studio",
     password: "123456",
@@ -43,11 +38,11 @@ function LoginPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const { setUser } = useContext(UserContext);
+  const showMockPanel = isMockEnabled();
 
   const [form, setForm] = useState({
-    email: MOCK_ACCOUNTS[0].email,
-    password: MOCK_ACCOUNTS[0].password,
-    role: MOCK_ACCOUNTS[0].role,
+    email: showMockPanel ? MOCK_ACCOUNTS[0].email : "",
+    password: showMockPanel ? MOCK_ACCOUNTS[0].password : "",
   });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -60,34 +55,32 @@ function LoginPage() {
   };
 
   const applyMockAccount = (acc) => {
-    setForm({
-      email: acc.email,
-      password: acc.password,
-      role: acc.role,
-    });
+    setForm({ email: acc.email, password: acc.password });
     setError("");
+  };
+
+  const afterLogin = (user, landing) => {
+    setUser(user);
+    const redirect = location.state?.from;
+    const go =
+      redirect &&
+      (user.role === "Customer" || user.role === "customer") &&
+      typeof redirect === "string"
+        ? redirect
+        : landing;
+    navigate(go, { replace: true });
   };
 
   const loginWithAccount = async (acc) => {
     setError("");
     setLoading(true);
-    const payload = {
-      email: acc.email,
-      password: acc.password,
-      role: acc.role,
-    };
-    setForm(payload);
+    setForm({ email: acc.email, password: acc.password });
     try {
-      const { user, landing } = await loginUseCase(payload);
-      setUser(user);
-      const redirect = location.state?.from;
-      const go =
-        redirect &&
-        (user.role === "Customer" || user.role === "customer") &&
-        typeof redirect === "string"
-          ? redirect
-          : landing;
-      navigate(go, { replace: true });
+      const { user, landing } = await loginUseCase({
+        email: acc.email,
+        password: acc.password,
+      });
+      afterLogin(user, landing);
     } catch (err) {
       setError(
         err?.response?.data?.message ||
@@ -103,18 +96,12 @@ function LoginPage() {
     e.preventDefault();
     setError("");
     setLoading(true);
-
     try {
-      const { user, landing } = await loginUseCase(form);
-      setUser(user);
-      const redirect = location.state?.from;
-      const go =
-        redirect &&
-        (user.role === "Customer" || user.role === "customer") &&
-        typeof redirect === "string"
-          ? redirect
-          : landing;
-      navigate(go, { replace: true });
+      const { user, landing } = await loginUseCase({
+        email: form.email,
+        password: form.password,
+      });
+      afterLogin(user, landing);
     } catch (err) {
       setError(
         err?.response?.data?.message ||
@@ -125,8 +112,6 @@ function LoginPage() {
       setLoading(false);
     }
   };
-
-  const showMockPanel = isMockEnabled();
 
   return (
     <div className="login-bg">
@@ -149,35 +134,37 @@ function LoginPage() {
             <p className="login-subtitle">Chào mừng trở lại Interior Studio</p>
 
             {showMockPanel && (
-            <div className="mock-login-panel">
-              <p className="mock-login-title">Mock verify — chọn role để vào ngay</p>
-              <div className="mock-login-chips">
-                {MOCK_ACCOUNTS.map((acc) => (
-                  <button
-                    key={acc.role}
-                    type="button"
-                    className={
-                      form.role === acc.role
-                        ? "mock-chip is-active"
-                        : "mock-chip"
-                    }
-                    disabled={loading}
-                    title={`${acc.hint} · ${acc.email}`}
-                    onClick={() => loginWithAccount(acc)}
-                    onContextMenu={(e) => {
-                      e.preventDefault();
-                      applyMockAccount(acc);
-                    }}
-                  >
-                    {acc.label}
-                  </button>
-                ))}
+              <div className="mock-login-panel">
+                <p className="mock-login-title">
+                  Mock verify — điền nhanh email (role do server/mock user)
+                </p>
+                <div className="mock-login-chips">
+                  {MOCK_ACCOUNTS.map((acc) => (
+                    <button
+                      key={acc.email}
+                      type="button"
+                      className={
+                        form.email === acc.email
+                          ? "mock-chip is-active"
+                          : "mock-chip"
+                      }
+                      disabled={loading}
+                      title={`${acc.hint} · ${acc.email}`}
+                      onClick={() => loginWithAccount(acc)}
+                      onContextMenu={(e) => {
+                        e.preventDefault();
+                        applyMockAccount(acc);
+                      }}
+                    >
+                      {acc.label}
+                    </button>
+                  ))}
+                </div>
+                <p className="mock-login-hint">
+                  Mật khẩu chung: <code>123456</code> · click = đăng nhập · chuột
+                  phải = chỉ điền form
+                </p>
               </div>
-              <p className="mock-login-hint">
-                Mật khẩu chung: <code>123456</code> · click = đăng nhập · chuột
-                phải = chỉ điền form
-              </p>
-            </div>
             )}
 
             <form className="login-form" onSubmit={handleSubmit}>
@@ -215,29 +202,17 @@ function LoginPage() {
                 </button>
               </div>
 
-              <select
-                name="role"
-                value={form.role}
-                onChange={(e) => {
-                  handleChange(e);
-                  const acc = MOCK_ACCOUNTS.find(
-                    (a) => a.role === e.target.value
-                  );
-                  if (acc) applyMockAccount(acc);
-                }}
-                aria-label="Vai trò đăng nhập"
-              >
-                <option value={ROLES.CUSTOMER}>Khách hàng</option>
-                <option value={ROLES.SALES}>Nhân viên Kinh doanh</option>
-                <option value={ROLES.MANAGER}>Quản lý</option>
-                <option value={ROLES.ADMIN}>Quản trị viên</option>
-              </select>
-
               {error && <div className="form-error">{error}</div>}
 
               <button className="login-btn" disabled={loading}>
                 {loading ? "Đang đăng nhập..." : "Đăng nhập"}
               </button>
+
+              <div className="login-link">
+                <span onClick={() => navigate("/forgot-password")}>
+                  Quên mật khẩu?
+                </span>
+              </div>
 
               <div className="login-link">
                 Chưa có tài khoản?{" "}

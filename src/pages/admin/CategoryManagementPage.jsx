@@ -140,6 +140,8 @@ const CategoryManagementPage = () => {
         onOk={() => form.submit()}
         okText="Lưu"
         cancelText="Hủy"
+        zIndex={4100}
+        getContainer={() => document.body}
       >
         <Form form={form} layout="vertical" onFinish={handleSubmit}>
           <Form.Item

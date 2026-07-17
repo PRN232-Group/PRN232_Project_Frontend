@@ -9,20 +9,24 @@ const EXPLORE_BY_ROLE = {
   guest: [
     { label: "Sản phẩm", to: "/products" },
     { label: "Concept thiết kế", to: "/design" },
+    { label: "Cảm hứng", to: "/blog" },
     { label: "Đăng nhập", to: "/login" },
     { label: "Đăng ký", to: "/register" },
   ],
   customer: [
     { label: "Sản phẩm", to: "/products" },
     { label: "Concept thiết kế", to: "/design" },
+    { label: "Cảm hứng", to: "/blog" },
     { label: "Giỏ hàng", to: "/cart" },
     { label: "Đơn hàng của tôi", to: "/orders" },
+    { label: "Báo giá của tôi", to: "/my-quotations" },
     { label: "Hỗ trợ", to: "/chat" },
   ],
   sales: [
     { label: "Bảng điều khiển", to: "/sales" },
     { label: "Đơn hàng KD", to: "/sales/orders" },
     { label: "Báo giá", to: "/sales/quotations" },
+    { label: "Yêu cầu thiết kế", to: "/sales/design-requests" },
     { label: "Chăm sóc khách", to: "/sales/chat" },
   ],
   manager: [
@@ -35,8 +39,8 @@ const EXPLORE_BY_ROLE = {
   admin: [
     { label: "Bảng điều khiển", to: "/admin" },
     { label: "Người dùng", to: "/admin/users" },
-    { label: "Đơn hàng", to: "/sales/orders" },
-    { label: "Sản phẩm", to: "/manager/products" },
+    { label: "Nội dung / Blog", to: "/admin/contents" },
+    { label: "Concept thiết kế", to: "/manager/designs" },
   ],
 };
 

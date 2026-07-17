@@ -1,14 +1,19 @@
-import React, { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import React, { useContext, useEffect, useState } from "react";
+import { useNavigate, useParams } from "react-router-dom";
 import { productService, cartService } from "../../application/services";
 import { addLocalCartItem } from "../../utils/cartLocal";
-import { notifySuccess } from "../../application/services/notify";
+import { notifySuccess, notifyError } from "../../application/services/notify";
+import { isProductInStock } from "../../domain/roles";
+import UserContext from "../../contexts/UserContext";
 
 const ProductDetailPage = () => {
   const { id } = useParams();
+  const navigate = useNavigate();
+  const { user } = useContext(UserContext);
   const [product, setProduct] = useState(null);
   const [quantity, setQuantity] = useState(1);
   const [loading, setLoading] = useState(true);
+  const [adding, setAdding] = useState(false);
 
   useEffect(() => {
     fetchProduct();
@@ -20,21 +25,44 @@ const ProductDetailPage = () => {
       const res = await productService.getById(id);
       const p = res.data || {};
       setProduct({ ...p, image: p.image || p.imageUrl });
-    } catch (err) {
-      console.error(err);
+      setQuantity(1);
+    } catch {
       setProduct(null);
     } finally {
       setLoading(false);
     }
   };
 
-  const addToCart = () => {
+  const inStock = isProductInStock(product);
+
+  const addToCart = async () => {
     if (!product) return;
-    addLocalCartItem(product, quantity);
-    cartService
-      .add({ productId: product.id, quantity })
-      .catch(() => {});
-    notifySuccess(`Đã thêm ${quantity} × "${product.name}" vào giỏ`);
+    if (!inStock) {
+      notifyError(`«${product.name}» đã hết hàng`);
+      return;
+    }
+    if (!user) {
+      notifyError("Vui lòng đăng nhập để thêm vào giỏ (kiểm tra tồn kho)");
+      navigate("/login", { state: { from: `/products/${id}` } });
+      return;
+    }
+
+    setAdding(true);
+    try {
+      await cartService.add({ productId: product.id, quantity });
+      addLocalCartItem(product, quantity);
+      notifySuccess(`Đã thêm ${quantity} × «${product.name}» vào giỏ`);
+    } catch (err) {
+      const msg =
+        err?.response?.data?.message || err?.message || "Không thêm được vào giỏ";
+      notifyError(msg);
+      if (/hết hàng|không đủ|chỉ còn/i.test(msg)) {
+        await fetchProduct();
+        setQuantity(1);
+      }
+    } finally {
+      setAdding(false);
+    }
   };
 
   return (
@@ -53,6 +81,9 @@ const ProductDetailPage = () => {
                   "https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=800&q=60";
               }}
             />
+            {!inStock && (
+              <span className="stock-badge is-out detail">Hết hàng</span>
+            )}
           </div>
           <div className="product-info">
             <h2>{product.name}</h2>
@@ -73,7 +104,20 @@ const ProductDetailPage = () => {
                 ₫ so với giá thị trường
               </p>
             )}
+            <p className="stock-status">
+              {inStock ? (
+                <span className="stock-pill is-ok">
+                  Còn {Number(product.stock)} sản phẩm
+                </span>
+              ) : (
+                <span className="stock-pill is-out">Hết hàng</span>
+              )}
+            </p>
             <p className="description">{product.description}</p>
+            <p className="quote-hint">
+              Mua lẻ: thêm vào giỏ. Cần báo giá theo gói? Thêm SP vào{" "}
+              <a href="/cart">giỏ hàng</a> rồi gửi yêu cầu báo giá tại đó.
+            </p>
 
             {product.specs && (
               <div className="product-specs">
@@ -124,17 +168,31 @@ const ProductDetailPage = () => {
               <div className="qty-control">
                 <button
                   type="button"
+                  disabled={!inStock}
                   onClick={() => setQuantity((q) => Math.max(1, q - 1))}
                 >
                   −
                 </button>
                 <span>{quantity}</span>
-                <button type="button" onClick={() => setQuantity((q) => q + 1)}>
+                <button
+                  type="button"
+                  disabled={!inStock}
+                  onClick={() =>
+                    setQuantity((q) =>
+                      Math.min(Number(product.stock) || 1, q + 1)
+                    )
+                  }
+                >
                   +
                 </button>
               </div>
-              <button type="button" className="checkout-btn" onClick={addToCart}>
-                Thêm vào giỏ
+              <button
+                type="button"
+                className="checkout-btn"
+                disabled={!inStock || adding}
+                onClick={addToCart}
+              >
+                {!inStock ? "Hết hàng" : adding ? "Đang thêm…" : "Thêm vào giỏ"}
               </button>
             </div>
           </div>

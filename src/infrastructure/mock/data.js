@@ -295,9 +295,9 @@ export const db = {
     {
       id: 1,
       title: "Xu hướng nội thất 2026",
-      slug: "xu-huong-2026",
+      slug: "xu-huong-noi-that-2026",
       type: "Blog",
-      body: "<p>Japandi và vật liệu tự nhiên vẫn dẫn đầu.</p>",
+      body: "<p>Năm 2026, xu hướng nội thất tiếp tục nghiêng về không gian thở được: ít đồ nhưng chọn đúng chất liệu, ánh sáng ấm và bố cục mở.</p><h3>Vật liệu nên ưu tiên</h3><ul><li>Gỗ sồi / gỗ thông FSC</li><li>Vải linen, cotton</li><li>Brushed brass hoặc đen mờ</li></ul><p>Bắt đầu từ một concept trên Interior Studio rồi gắn sản phẩm catalog để ước lượng ngân sách thực tế.</p>",
       coverUrl:
         "https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?w=800&q=80",
       isPublished: true,
@@ -307,12 +307,23 @@ export const db = {
       id: 2,
       title: "Cách chọn sofa cho căn hộ nhỏ",
       slug: "chon-sofa-can-ho-nho",
-      type: "Blog",
-      body: "<p>Ưu tiên form thấp, chân cao tạo cảm giác rộng.</p>",
+      type: "Guide",
+      body: "<p>Căn hộ nhỏ dễ bị nuốt bởi sofa quá to. Chọn form vừa, chân cao và màu sáng.</p><h3>Kích thước</h3><ul><li>Sofa dài khoảng 2/3 tường chính</li><li>Lối đi 80–90 cm</li></ul><p>Ưu tiên lưng thấp–trung bình, tone be–kem–trắng ngà.</p>",
       coverUrl:
         "https://images.unsplash.com/photo-1493663284031-b7e3aefcae8e?w=800&q=80",
       isPublished: true,
       publishedAt: "2026-06-20T00:00:00Z",
+    },
+    {
+      id: 3,
+      title: "Ánh sáng 3 lớp trong nhà",
+      slug: "anh-sang-3-lop-trong-nha",
+      type: "Guide",
+      body: "<p>Công thức 3 lớp: ambient, task, accent giúp phòng ấm và linh hoạt.</p><h3>Ambient</h3><p>Nền sáng chung 2700–3000K.</p><h3>Task</h3><p>Đèn bàn, đèn đầu giường, đèn dưới tủ bếp.</p><h3>Accent</h3><p>Đèn sàn, spotlight làm điểm nhấn tường/kệ.</p>",
+      coverUrl:
+        "https://images.unsplash.com/photo-1524758631624-e2822e304c36?w=800&q=80",
+      isPublished: true,
+      publishedAt: "2026-06-10T00:00:00Z",
     },
   ],
 

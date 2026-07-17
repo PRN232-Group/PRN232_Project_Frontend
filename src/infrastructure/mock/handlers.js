@@ -53,15 +53,13 @@ export async function handleMockRequest(config) {
 
   // ----- Auth -----
   if (method === "post" && urlPath === "/api/auth/login") {
-    const role = body.role || "Customer";
     const email = (body.email || "").toLowerCase().trim();
     const byEmail = db.users.find((u) => u.email.toLowerCase() === email);
-    const byRole = db.users.find((u) => u.role === role);
-    const user = byEmail || byRole || {
+    const user = byEmail || {
       id: 12,
       name: (email || "user").split("@")[0],
       email: body.email,
-      role,
+      role: "Customer",
       phone: "0901234567",
       isLocked: false,
       status: "Active",
@@ -69,8 +67,11 @@ export async function handleMockRequest(config) {
     if (user.isLocked || user.status === "Locked") {
       fail(403, "Tài khoản đã bị khóa. Liên hệ quản trị viên.");
     }
-    if (user.role === "Customer" || role === "Customer") {
-      const cust = byEmail?.role === "Customer" ? byEmail : db.users.find((u) => u.id === 12);
+    if (user.role === "Customer") {
+      const cust =
+        byEmail?.role === "Customer"
+          ? byEmail
+          : db.users.find((u) => u.id === 12);
       if (cust && !cust.isLocked) {
         db.profile = {
           id: cust.id,
@@ -91,7 +92,7 @@ export async function handleMockRequest(config) {
       id: user.id,
       name: user.name,
       email: user.email || body.email,
-      role: byEmail ? user.role : role,
+      role: user.role,
       phone: user.phone || "0901234567",
     });
   }
@@ -104,7 +105,7 @@ export async function handleMockRequest(config) {
 
   // ----- Products -----
   if (method === "get" && urlPath === "/api/products") {
-    return ok([...db.products]);
+    return ok(db.products.map((p) => ({ ...p, inStock: (p.stock ?? 0) > 0 })));
   }
   {
     const m = match(method, urlPath, {
@@ -114,17 +115,19 @@ export async function handleMockRequest(config) {
     if (m) {
       const p = db.products.find((x) => String(x.id) === m[0]);
       if (!p) notFound("Product not found");
-      return ok(p);
+      return ok({ ...p, inStock: (p.stock ?? 0) > 0 });
     }
   }
   if (method === "get" && urlPath === "/api/products/search") {
     const kw = (params.keyword || "").toString().toLowerCase();
     return ok(
-      db.products.filter(
-        (p) =>
-          p.name.toLowerCase().includes(kw) ||
-          (p.description || "").toLowerCase().includes(kw)
-      )
+      db.products
+        .filter(
+          (p) =>
+            p.name.toLowerCase().includes(kw) ||
+            (p.description || "").toLowerCase().includes(kw)
+        )
+        .map((p) => ({ ...p, inStock: (p.stock ?? 0) > 0 }))
     );
   }
   if (method === "post" && urlPath === "/api/products") {
@@ -208,11 +211,24 @@ export async function handleMockRequest(config) {
     const product = db.products.find(
       (p) => String(p.id) === String(body.productId)
     );
+    if (!product) notFound();
+    const qty = Number(body.quantity || 1);
+    if (qty <= 0) fail(400, "Số lượng phải lớn hơn 0.");
+    if ((product.stock ?? 0) <= 0) {
+      fail(400, `«${product.name}» đã hết hàng.`);
+    }
     const existing = db.cart.find(
       (c) => String(c.productId) === String(body.productId)
     );
+    const desired = (existing?.quantity || 0) + qty;
+    if (desired > product.stock) {
+      fail(
+        400,
+        `«${product.name}» chỉ còn đủ cho ${product.stock} sản phẩm trong giỏ.`
+      );
+    }
     if (existing) {
-      existing.quantity += Number(body.quantity || 1);
+      existing.quantity = desired;
       return ok(existing);
     }
     const item = {
@@ -221,7 +237,8 @@ export async function handleMockRequest(config) {
       productName: product?.name || "Sản phẩm",
       imageUrl: product?.imageUrl,
       price: product?.price || 0,
-      quantity: Number(body.quantity || 1),
+      quantity: qty,
+      inStock: true,
     };
     db.cart.push(item);
     return ok(item, 201);
@@ -234,7 +251,17 @@ export async function handleMockRequest(config) {
     if (m) {
       const i = db.cart.findIndex((x) => String(x.id) === m[0]);
       if (i < 0) notFound();
-      db.cart[i] = { ...db.cart[i], ...body };
+      const product = db.products.find(
+        (p) => String(p.id) === String(db.cart[i].productId)
+      );
+      const newQty = Number(body.quantity ?? db.cart[i].quantity);
+      if (product && newQty > (product.stock ?? 0)) {
+        fail(
+          400,
+          `«${product.name}» chỉ còn đủ cho ${product.stock} sản phẩm trong giỏ.`
+        );
+      }
+      db.cart[i] = { ...db.cart[i], ...body, quantity: newQty };
       return ok(db.cart[i]);
     }
   }
@@ -575,23 +602,148 @@ export async function handleMockRequest(config) {
   }
 
   // ----- Quotations / Design -----
-  if (method === "get" && urlPath === "/api/quotation-requests") {
-    return ok(
-      db.quotationRequests.map((r) => {
-        const products = (r.productIds || [])
-          .map((pid) => db.products.find((p) => p.id === pid))
-          .filter(Boolean);
+  const enrichRequest = (r) => {
+    const lineQty = new Map();
+    for (const it of r.items || []) {
+      const pid = Number(it.productId);
+      if (!pid) continue;
+      lineQty.set(pid, Math.max(1, Number(it.quantity) || 1));
+    }
+    const productIds =
+      (r.productIds || []).length > 0
+        ? r.productIds
+        : [...lineQty.keys()];
+    const lines = productIds
+      .map((pid) => {
+        const p = db.products.find((x) => x.id === Number(pid));
+        if (!p) return null;
+        const quantity = lineQty.get(Number(pid)) || 1;
         return {
-          ...r,
-          products,
-          estimateTotal: products.reduce((s, p) => s + (p.price || 0), 0),
-          marketTotal: products.reduce(
-            (s, p) => s + (p.marketPrice || p.price || 0),
-            0
-          ),
+          productId: p.id,
+          name: p.name,
+          price: p.price,
+          marketPrice: p.marketPrice,
+          quantity,
+          stock: p.stock,
+          imageUrl: p.imageUrl,
         };
       })
+      .filter(Boolean);
+    const products = lines.map((l) => ({
+      id: l.productId,
+      name: l.name,
+      price: l.price,
+      marketPrice: l.marketPrice,
+      quantity: l.quantity,
+      stock: l.stock,
+      imageUrl: l.imageUrl,
+    }));
+    return {
+      ...r,
+      productIds,
+      lines,
+      products,
+      estimateTotal: lines.reduce((s, l) => s + l.price * l.quantity, 0),
+      marketTotal: lines.reduce(
+        (s, l) => s + (l.marketPrice || l.price) * l.quantity,
+        0
+      ),
+    };
+  };
+
+  const enrichQuotation = (q) => {
+    const lineQty = new Map();
+    for (const it of q.items || []) {
+      const pid = Number(it.productId);
+      if (!pid) continue;
+      lineQty.set(pid, Math.max(1, Number(it.quantity) || 1));
+    }
+    const productIds =
+      (q.productIds || []).length > 0
+        ? q.productIds
+        : [...lineQty.keys()];
+    const items = productIds
+      .map((pid) => {
+        const p = db.products.find((x) => x.id === Number(pid));
+        if (!p) return null;
+        return {
+          productId: p.id,
+          productName: p.name,
+          quantity: lineQty.get(Number(pid)) || 1,
+          price: p.price,
+          marketPrice: p.marketPrice,
+          stock: p.stock,
+          imageUrl: p.imageUrl,
+          specs: p.specs,
+        };
+      })
+      .filter(Boolean);
+    const catalogTotal = items.reduce((s, i) => s + i.price * i.quantity, 0);
+    const marketTotal = items.reduce(
+      (s, i) => s + (i.marketPrice || i.price) * i.quantity,
+      0
     );
+    const amount = Number(q.amount) || 0;
+    return {
+      ...q,
+      productIds,
+      customerEmail: db.users.find((u) => u.id === q.customerId)?.email || "",
+      totalPrice: amount || catalogTotal,
+      items,
+      catalogTotal,
+      marketTotal,
+      savings: Math.max(0, marketTotal - (amount || catalogTotal)),
+    };
+  };
+
+  if (method === "get" && urlPath === "/api/quotation-requests") {
+    return ok(db.quotationRequests.map(enrichRequest));
+  }
+  if (method === "get" && urlPath === "/api/quotation-requests/mine") {
+    const session = getUser();
+    const cid = session?.id || db.profile?.id;
+    const mine = (db.quotationRequests || []).filter(
+      (r) => !cid || Number(r.customerId) === Number(cid)
+    );
+    return ok(mine.map(enrichRequest));
+  }
+  if (method === "post" && urlPath === "/api/quotation-requests") {
+    const session = getUser();
+    const itemsIn = Array.isArray(body.items) ? body.items : [];
+    const lineMap = new Map();
+    for (const it of itemsIn) {
+      const pid = Number(it.productId);
+      if (!pid) continue;
+      lineMap.set(pid, Math.max(1, Number(it.quantity) || 1));
+    }
+    let productIds = (body.productIds || []).map(Number).filter(Boolean);
+    if (lineMap.size) {
+      productIds = [...lineMap.keys()];
+    } else {
+      for (const pid of productIds) lineMap.set(pid, 1);
+    }
+    if (!productIds.length) {
+      return fail(400, "Chọn ít nhất một sản phẩm");
+    }
+    const item = {
+      id: db.nextIds.quotationReq++,
+      customerId: session?.id || db.profile?.id || 12,
+      customerName:
+        session?.name || session?.fullName || db.profile?.name || "Khách",
+      title: body.title || "Yêu cầu báo giá",
+      description: body.description || "",
+      productIds,
+      items: [...lineMap.entries()].map(([productId, quantity]) => ({
+        productId,
+        quantity,
+      })),
+      status: "Pending",
+      reply: null,
+      replyNote: null,
+      createdAt: new Date().toISOString(),
+    };
+    db.quotationRequests.push(item);
+    return ok(item, 201);
   }
   {
     const m = match(method, urlPath, {
@@ -623,41 +775,75 @@ export async function handleMockRequest(config) {
     }
   }
   if (method === "get" && urlPath === "/api/quotations") {
-    return ok(
-      db.quotations.map((q) => {
-        const items = (q.productIds || [])
-          .map((pid) => {
-            const p = db.products.find((x) => x.id === pid);
-            if (!p) return null;
-            return {
-              productId: p.id,
-              productName: p.name,
-              quantity: 1,
-              price: p.price,
-              marketPrice: p.marketPrice,
-              stock: p.stock,
-              imageUrl: p.imageUrl,
-              specs: p.specs,
-            };
-          })
-          .filter(Boolean);
-        const catalogTotal = items.reduce((s, i) => s + i.price * i.quantity, 0);
-        const marketTotal = items.reduce(
-          (s, i) => s + (i.marketPrice || i.price) * i.quantity,
-          0
-        );
-        return {
-          ...q,
-          customerEmail:
-            db.users.find((u) => u.id === q.customerId)?.email || "",
-          totalPrice: q.amount || catalogTotal,
-          items,
-          catalogTotal,
-          marketTotal,
-          savings: Math.max(0, marketTotal - (q.amount || catalogTotal)),
-        };
-      })
+    return ok(db.quotations.map(enrichQuotation));
+  }
+  if (method === "get" && urlPath === "/api/quotations/mine") {
+    const session = getUser();
+    const cid = session?.id || db.profile?.id;
+    const mine = (db.quotations || []).filter(
+      (q) => !cid || Number(q.customerId) === Number(cid)
     );
+    return ok(mine.map(enrichQuotation));
+  }
+  if (method === "post" && urlPath === "/api/quotations") {
+    const session = getUser();
+    const reqId = body.quotationRequestId;
+    const req = reqId
+      ? db.quotationRequests.find((r) => String(r.id) === String(reqId))
+      : null;
+    const itemsIn = Array.isArray(body.items) ? body.items : [];
+    const lineMap = new Map();
+    for (const it of itemsIn) {
+      const pid = Number(it.productId);
+      if (!pid) continue;
+      lineMap.set(pid, Math.max(1, Number(it.quantity) || 1));
+    }
+    if (!lineMap.size && req?.items?.length) {
+      for (const it of req.items) {
+        lineMap.set(Number(it.productId), Math.max(1, Number(it.quantity) || 1));
+      }
+    }
+    let productIds = (body.productIds || req?.productIds || [])
+      .map(Number)
+      .filter(Boolean);
+    if (lineMap.size) productIds = [...lineMap.keys()];
+    else for (const pid of productIds) lineMap.set(pid, 1);
+
+    const item = {
+      id: db.nextIds.quotation++,
+      quotationRequestId: reqId || null,
+      customerId: body.customerId || req?.customerId || session?.id || 12,
+      customerName:
+        body.customerName ||
+        req?.customerName ||
+        session?.name ||
+        "Khách",
+      title: body.title || req?.title || "Báo giá",
+      amount: Number(body.amount) || 0,
+      productIds,
+      items: [...lineMap.entries()].map(([productId, quantity]) => ({
+        productId,
+        quantity,
+      })),
+      status: body.status || "PendingApproval",
+      notes: body.notes || body.note || "",
+      createdAt: new Date().toISOString(),
+    };
+    db.quotations.push(item);
+    if (req) {
+      const i = db.quotationRequests.findIndex((x) => x.id === req.id);
+      if (i >= 0) {
+        db.quotationRequests[i] = {
+          ...db.quotationRequests[i],
+          status: "Replied",
+          replyNote:
+            db.quotationRequests[i].replyNote ||
+            body.notes ||
+            `Đã tạo báo giá #${item.id}`,
+        };
+      }
+    }
+    return ok(item, 201);
   }
   {
     const m = match(method, urlPath, {
@@ -667,7 +853,12 @@ export async function handleMockRequest(config) {
     if (m) {
       const i = db.quotations.findIndex((x) => String(x.id) === m[0]);
       if (i < 0) notFound();
-      db.quotations[i] = { ...db.quotations[i], ...body };
+      const next = { ...db.quotations[i], ...body };
+      if (body.amount != null) next.amount = Number(body.amount) || 0;
+      if (body.notes != null || body.note != null) {
+        next.notes = body.notes ?? body.note;
+      }
+      db.quotations[i] = next;
       return ok(db.quotations[i]);
     }
   }

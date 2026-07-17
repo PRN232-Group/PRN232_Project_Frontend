@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { productService, cartService } from "../../application/services";
-import { notifySuccess, notifyError, notifyInfo, notifyWarn } from "../../application/services/notify";
+import { notifySuccess, notifyError } from "../../application/services/notify";
+import { isProductInStock } from "../../domain/roles";
 
 const ProductSearchPage = () => {
   const navigate = useNavigate();
@@ -11,7 +12,6 @@ const ProductSearchPage = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  // pagination
   const [currentPage, setCurrentPage] = useState(1);
   const pageSize = 8;
 
@@ -22,7 +22,7 @@ const ProductSearchPage = () => {
       } else {
         setProducts([]);
       }
-    }, 400); // debounce
+    }, 400);
 
     return () => clearTimeout(delay);
   }, [keyword]);
@@ -31,24 +31,17 @@ const ProductSearchPage = () => {
     try {
       setLoading(true);
       setError("");
-
       const res = await productService.search(keyword);
-
-      setProducts(res.data || []);
+      const list = (res.data || []).map((p) => ({
+        ...p,
+        image: p.image || p.imageUrl,
+        inStock: isProductInStock(p),
+      }));
+      setProducts(list);
       setCurrentPage(1);
-    } catch (err) {
-      console.error(err);
-
-      // fallback demo
-      setProducts([
-        {
-          id: 1,
-          name: "Modern Sofa",
-          price: 5000000,
-          image:
-            "https://images.unsplash.com/photo-1505693416388-ac5ce068fe85",
-        },
-      ]);
+    } catch {
+      setProducts([]);
+      setError("Không tìm được sản phẩm");
     } finally {
       setLoading(false);
     }
@@ -56,100 +49,133 @@ const ProductSearchPage = () => {
 
   const addToCart = async (product) => {
     try {
+      if (!isProductInStock(product)) {
+        notifyError(`«${product.name}» đã hết hàng`);
+        return;
+      }
       await cartService.add({
         productId: product.id,
         quantity: 1,
       });
-
       notifySuccess("Đã thêm vào giỏ hàng!");
     } catch (err) {
-      console.error(err);
-      notifyError("Thêm vào giỏ hàng thất bại");
+      const msg =
+        err?.response?.data?.message ||
+        err?.message ||
+        "Thêm vào giỏ hàng thất bại";
+      notifyError(msg);
+      if (/hết hàng/i.test(msg) && !/chỉ còn đủ/i.test(msg)) {
+        setProducts((prev) =>
+          prev.map((p) =>
+            p.id === product.id ? { ...p, inStock: false, stock: 0 } : p
+          )
+        );
+      }
+      await searchProducts();
     }
   };
 
-  // pagination
-  const totalPages = Math.ceil(products.length / pageSize);
-
+  const totalPages = Math.ceil(products.length / pageSize) || 1;
   const startIndex = (currentPage - 1) * pageSize;
-  const currentProducts = products.slice(
-    startIndex,
-    startIndex + pageSize
-  );
+  const currentProducts = products.slice(startIndex, startIndex + pageSize);
 
   const changePage = (page) => {
-    if (page >= 1 && page <= totalPages) {
-      setCurrentPage(page);
-    }
+    if (page >= 1 && page <= totalPages) setCurrentPage(page);
   };
 
   return (
-    <div className="product-search-page">
-      <h2>Search Products</h2>
+    <div className="product-search-page page">
+      <h2>Tìm sản phẩm</h2>
 
-      {/* SEARCH BAR */}
       <div className="search-bar">
         <input
           type="text"
-          placeholder="Search products..."
+          placeholder="Nhập tên sản phẩm..."
           value={keyword}
           onChange={(e) => setKeyword(e.target.value)}
         />
       </div>
 
-      {/* STATUS */}
-      {loading && <p>Searching...</p>}
+      {loading && <p>Đang tìm...</p>}
       {error && <p className="error">{error}</p>}
 
-      {/* RESULTS */}
       <div className="grid">
-        {currentProducts.map((p) => (
-          <div key={p.id} className="card">
-            <img
-              src={p.image}
-              alt={p.name}
-              onClick={() => navigate(`/products/${p.id}`)}
-            />
-
-            <h3>{p.name}</h3>
-
-            <p className="price">
-              {p.price?.toLocaleString()} đ
-            </p>
-
-            <div className="actions">
-              <button onClick={() => addToCart(p)}>
-                Add to Cart
-              </button>
-
-              <button
-                onClick={() => navigate(`/products/${p.id}`)}
-              >
-                View
-              </button>
+        {currentProducts.map((p) => {
+          const inStock = isProductInStock(p);
+          return (
+            <div
+              key={p.id}
+              className={`card${inStock ? "" : " is-out-of-stock"}`}
+            >
+              <div className="card-media">
+                <img
+                  src={p.image}
+                  alt={p.name}
+                  onClick={() => navigate(`/products/${p.id}`)}
+                  onError={(e) => {
+                    e.currentTarget.src =
+                      "https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=600&q=60";
+                  }}
+                />
+                {!inStock ? (
+                  <span className="stock-badge is-out">Hết hàng</span>
+                ) : (
+                  <span className="stock-badge is-ok">
+                    Còn {Number(p.stock)}
+                  </span>
+                )}
+              </div>
+              <h3>{p.name}</h3>
+              <p className="price">
+                {Number(p.price || 0).toLocaleString("vi-VN")} ₫
+              </p>
+              <p className="stock-line">
+                {inStock
+                  ? `Còn ${Number(p.stock)} sản phẩm`
+                  : "Tạm hết hàng"}
+              </p>
+              <div className="actions">
+                <button
+                  type="button"
+                  disabled={!inStock}
+                  onClick={() => addToCart(p)}
+                >
+                  {inStock ? "Thêm giỏ" : "Hết hàng"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => navigate(`/products/${p.id}`)}
+                >
+                  Xem
+                </button>
+              </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
-      {/* EMPTY STATE */}
       {!loading && keyword && products.length === 0 && (
-        <p>No products found</p>
+        <p>Không tìm thấy sản phẩm</p>
       )}
 
-      {/* PAGINATION */}
       {products.length > 0 && (
         <div className="pagination">
-          <button onClick={() => changePage(currentPage - 1)}>
-            Prev
+          <button
+            type="button"
+            disabled={currentPage <= 1}
+            onClick={() => changePage(currentPage - 1)}
+          >
+            Trước
           </button>
-
           <span>
-            Page {currentPage} / {totalPages || 1}
+            Trang {currentPage} / {totalPages}
           </span>
-
-          <button onClick={() => changePage(currentPage + 1)}>
-            Next
+          <button
+            type="button"
+            disabled={currentPage >= totalPages}
+            onClick={() => changePage(currentPage + 1)}
+          >
+            Sau
           </button>
         </div>
       )}

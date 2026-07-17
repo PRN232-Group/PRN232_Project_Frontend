@@ -1,5 +1,23 @@
 # PRN232_Project_Frontend
 
+## Git — repo & nhánh
+
+| | Frontend (repo này) | Backend API |
+|---|---------------------|-------------|
+| **GitHub** | https://github.com/PRN232-Group/PRN232_Project_Frontend.git | https://github.com/PRN232-Group/PRN232_Project_Frontend.git → **Backend:** https://github.com/PRN232-Group/PRN232_Project_Backend.git |
+| **Nhánh** | `main` | `backend` |
+| **Thư mục local** | `d:\PRN232\Frontend_Project` | `d:\PRN232\Project` |
+
+Setup BE (DB, JWT, SMTP): xem README repo Backend. SQL schema/seed: `docs/create_InteriorStudio.sql`, `docs/seed_quotations.sql` (bản đầy đủ + thứ tự seed nằm ở repo BE `docs/DATABASE_SETUP.md`).
+
+```env
+# .env
+VITE_API_BASE_URL=http://localhost:5259
+VITE_USE_MOCK=false
+```
+
+---
+
 - Về role team: team 5 người thì 1 front, 4 back (do front không bị hỏi kiến trúc và code nên ko cần chú tâm quá hoặc bá hơn gánh back cũng đc =)) )
 
 - Về thiết kế: tầm trước slot thứ 2 tuần sau phải có bản figma giao diện sẵn (slot thứ 2 tức thứ 5 ấy)

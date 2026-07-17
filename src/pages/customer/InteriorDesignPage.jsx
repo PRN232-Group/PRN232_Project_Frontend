@@ -1,8 +1,10 @@
-import React, { useCallback, useEffect, useState } from "react";
-import { useLocation } from "react-router-dom";
+import React, { useCallback, useContext, useEffect, useMemo, useState } from "react";
+import { Navigate, useLocation } from "react-router-dom";
 import "../../styles/customer/interiorDesignPage.css";
 import DesignDetailModal from "../../components/DesignDetailModal";
 import { interiorDesignService } from "../../application/services";
+import UserContext from "../../contexts/UserContext";
+import { normalizeRole } from "../../domain/roles";
 
 const CATEGORIES = [
   { key: "All", label: "Tất cả" },
@@ -17,6 +19,12 @@ const CATEGORY_LABELS = {
   Bedroom: "Phòng ngủ",
   Workspace: "Làm việc",
   Kitchen: "Bếp",
+};
+
+const STAFF_DESIGN_REDIRECT = {
+  sales: "/sales/design-requests",
+  manager: "/manager/designs",
+  admin: "/manager/designs",
 };
 
 const normalizeDesign = (d) => ({
@@ -34,8 +42,11 @@ const excerpt = (text, max = 72) =>
 
 const InteriorDesignPage = () => {
   const location = useLocation();
+  const { user } = useContext(UserContext);
+  const roleKey = user ? normalizeRole(user.role) : "guest";
+  const staffRedirect = STAFF_DESIGN_REDIRECT[roleKey];
+
   const [designs, setDesigns] = useState([]);
-  const [filtered, setFiltered] = useState([]);
   const [category, setCategory] = useState("All");
   const [selectedId, setSelectedId] = useState(null);
   const [detail, setDetail] = useState(null);
@@ -43,14 +54,14 @@ const InteriorDesignPage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
+  const filtered = useMemo(() => {
+    if (category === "All") return designs;
+    return designs.filter((d) => d.category === category);
+  }, [category, designs]);
+
   useEffect(() => {
     fetchDesigns();
   }, []);
-
-  useEffect(() => {
-    if (category === "All") setFiltered(designs);
-    else setFiltered(designs.filter((d) => d.category === category));
-  }, [category, designs]);
 
   useEffect(() => {
     const openId = location.state?.openId;
@@ -67,8 +78,7 @@ const InteriorDesignPage = () => {
         .filter((d) => d.isPublished !== false)
         .map(normalizeDesign);
       setDesigns(list);
-    } catch (err) {
-      console.error(err);
+    } catch {
       setError("Không tải được mẫu thiết kế");
     } finally {
       setLoading(false);
@@ -82,8 +92,7 @@ const InteriorDesignPage = () => {
     try {
       const res = await interiorDesignService.getById(id);
       setDetail(normalizeDesign(res.data));
-    } catch (err) {
-      console.error(err);
+    } catch {
       const fallback = designs.find((d) => d.id === id);
       if (fallback) setDetail(fallback);
     } finally {
@@ -96,6 +105,10 @@ const InteriorDesignPage = () => {
     setDetail(null);
     setDetailLoading(false);
   };
+
+  if (staffRedirect) {
+    return <Navigate to={staffRedirect} replace />;
+  }
 
   return (
     <div className="interior-page">
@@ -163,16 +176,19 @@ const InteriorDesignPage = () => {
       </div>
 
       {!loading && filtered.length === 0 && (
-        <p className="interior-status">Không có mẫu trong danh mục này</p>
+        <p className="interior-status">
+          {designs.length === 0
+            ? "Hiện chưa có concept đang xuất bản."
+            : "Không có mẫu trong danh mục này"}
+        </p>
       )}
 
-      {selectedId != null && (
-        <DesignDetailModal
-          design={detail}
-          loading={detailLoading}
-          onClose={closeDetail}
-        />
-      )}
+      <DesignDetailModal
+        open={selectedId != null}
+        design={detail}
+        loading={detailLoading}
+        onClose={closeDetail}
+      />
     </div>
   );
 };

@@ -407,6 +407,75 @@ button {
   margin: 0;
 }
 .card .actions button { flex: 1; padding: 10px 14px; }
+.card .actions button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  transform: none;
+}
+.card-media {
+  position: relative;
+}
+.stock-badge {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  z-index: 1;
+  padding: 4px 10px;
+  border-radius: var(--radius-pill);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+.stock-badge.is-out {
+  background: color-mix(in srgb, var(--danger) 88%, #000);
+  color: #fff;
+}
+.stock-badge.is-ok {
+  background: color-mix(in srgb, var(--clay) 88%, #000);
+  color: #fff;
+}
+.stock-line {
+  margin: 0 0 10px;
+  font-size: 0.82rem;
+  color: var(--muted);
+  font-weight: 600;
+}
+.card.is-out-of-stock .stock-line {
+  color: var(--danger);
+}
+.stock-badge.detail {
+  top: 14px;
+  left: 14px;
+}
+.card.is-out-of-stock {
+  opacity: 0.92;
+}
+.card.is-out-of-stock img {
+  filter: grayscale(0.35);
+}
+.stock-status {
+  margin: 0 0 12px;
+}
+.stock-pill {
+  display: inline-flex;
+  align-items: center;
+  min-height: 26px;
+  padding: 0 10px;
+  border-radius: var(--radius-pill);
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+.stock-pill.is-ok {
+  background: color-mix(in srgb, var(--success) 16%, #fff);
+  color: var(--success);
+}
+.stock-pill.is-out {
+  background: color-mix(in srgb, var(--danger) 14%, #fff);
+  color: var(--danger);
+}
+.product-image {
+  position: relative;
+}
 .card .actions button:last-child {
   background: transparent;
   color: var(--clay-dark);
