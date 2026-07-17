@@ -4,7 +4,7 @@
 
 | | Frontend (repo này) | Backend API |
 |---|---------------------|-------------|
-| **GitHub** | https://github.com/PRN232-Group/PRN232_Project_Frontend.git | https://github.com/PRN232-Group/PRN232_Project_Frontend.git → **Backend:** https://github.com/PRN232-Group/PRN232_Project_Backend.git |
+| **GitHub** | https://github.com/PRN232-Group/PRN232_Project_Frontend.git | https://github.com/PRN232-Group/PRN232_Project_Backend.git |
 | **Nhánh** | `main` | `backend` |
 | **Thư mục local** | `d:\PRN232\Frontend_Project` | `d:\PRN232\Project` |
 
