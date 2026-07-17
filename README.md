@@ -18,24 +18,6 @@ VITE_USE_MOCK=false
 
 ---
 
-- Về role team: team 5 người thì 1 front, 4 back (do front không bị hỏi kiến trúc và code nên ko cần chú tâm quá hoặc bá hơn gánh back cũng đc =)) )
-
-- Về thiết kế: tầm trước slot thứ 2 tuần sau phải có bản figma giao diện sẵn (slot thứ 2 tức thứ 5 ấy)
-
-- Về backend FR:
-FR 1,2,13: Trung
-FR 3,4: Đức
-FR 5,6,8: Hoàng
-FR 9,10,11: Hiệp
-FR 12,14: Phú
-(Riêng FR 7 sẽ cân nhắc/Nội dung chi tiết FR là gì xem cái ảnh gửi trên nhóm đã ghim)
-
-- Về frontend: 
-Trung =)) => đợi Phú có bản thiết kế và làm liền cần data hiện gì sẽ báo cho team làm api đúng
-
-- Về kiến trúc:
-Cơ bản thôi nhưng phải theo thầy môn prn này => phải tối ưu entity, cái gì ra cái đó, có handle khi loss connection db bảo toàn tránh lỗi data
-
 - Về git push lên:
 
 Link git:
