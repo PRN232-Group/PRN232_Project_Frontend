@@ -5,7 +5,7 @@
 | | Frontend (repo này) | Backend API |
 |---|---------------------|-------------|
 | **GitHub** | https://github.com/PRN232-Group/PRN232_Project_Frontend.git | https://github.com/PRN232-Group/PRN232_Project_Backend.git |
-| **Nhánh** | `main` | `backend` |
+| **Nhánh** | `theo member` | `theo member` |
 | **Thư mục local** | `d:\PRN232\Frontend_Project` | `d:\PRN232\Project` |
 
 Setup BE (DB, JWT, SMTP): xem README repo Backend. SQL schema/seed: `docs/create_InteriorStudio.sql`, `docs/seed_quotations.sql` (bản đầy đủ + thứ tự seed nằm ở repo BE `docs/DATABASE_SETUP.md`).
