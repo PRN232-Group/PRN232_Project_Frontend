@@ -41,8 +41,6 @@ export function normalizeRole(role) {
   if (["sales", "sale"].includes(r)) return ROLE_KEYS.SALES;
   if (["manager", "management"].includes(r)) return ROLE_KEYS.MANAGER;
   if (["admin", "administrator"].includes(r)) return ROLE_KEYS.ADMIN;
-  // Legacy production → manager workspace
-  if (["production", "factory"].includes(r)) return ROLE_KEYS.MANAGER;
   return ROLE_KEYS.CUSTOMER;
 }
 
@@ -51,7 +49,6 @@ export const ROLE_SECTIONS = Object.freeze({
   customer: [],
   sales: ["sales"],
   manager: ["manager"],
-  // Admin = full Sales + Quản lý + Admin
   admin: ["admin", "manager", "sales"],
 });
 
@@ -161,9 +158,13 @@ export function pathMatchesPageKey(pathname, pageKey) {
 export function canAccessPage(pathname, permissions) {
   if (isAlwaysAllowedPath(pathname)) return true;
   const path = (pathname || "/").split("?")[0];
-  // Alias cũ: /sales/quotation-approval → hub /sales/quotations
   if (path === "/sales/quotation-approval" || path.startsWith("/sales/quotation-approval/")) {
     return canAccessPage("/sales/quotations", permissions);
+  }
+  if (path === "/manager/orders" || path.startsWith("/manager/orders/")) {
+    const list = Array.isArray(permissions) ? permissions : [];
+    if (list.some((k) => String(k).startsWith("/manager"))) return true;
+    return canAccessPage("/sales/orders", permissions);
   }
   const list = Array.isArray(permissions) ? permissions : [];
   return list.some((k) => pathMatchesPageKey(pathname, k));

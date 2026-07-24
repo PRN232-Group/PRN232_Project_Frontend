@@ -135,3 +135,13 @@
 .chat-input button:hover {
   background: var(--clay-dark);
 }
+
+.chat-hint {
+  margin: 12px 0 0;
+  font-size: 0.85rem;
+  color: var(--muted, #6b6258);
+  text-align: center;
+}
+.chat-hint a {
+  color: var(--clay-dark, #8a5b34);
+}

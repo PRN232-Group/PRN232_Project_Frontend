@@ -1,0 +1,23 @@
+@startuml fig4_auth
+!theme plain
+skinparam shadowing false
+skinparam backgroundColor white
+skinparam ActivityBackgroundColor #F5F8FC
+skinparam ActivityBorderColor #1F4E79
+
+start
+:Open /register;
+:POST /api/auth/register/request\n(store EmailOtp, send OTP);
+:Enter OTP;
+:POST /api/auth/register/verify\n(create Customer user);
+:Open /login;
+:POST /api/auth/login\n(BCrypt + JWT + permissions);
+:Store accessToken;
+:Navigate ROLE_LANDING\n(Customer /, Sales /sales,\nManager /manager, Admin /admin);
+
+floating note right
+  Forgot password:
+  OTP → ResetToken → new password
+end note
+stop
+@enduml

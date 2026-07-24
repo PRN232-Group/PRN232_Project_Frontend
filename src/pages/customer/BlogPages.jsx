@@ -19,7 +19,10 @@ export function BlogListPage() {
   useEffect(() => {
     (async () => {
       try {
-        const res = await contentService.getAll();
+        // Phú: GET /api/Blog — chỉ published Type=Blog
+        const res = await contentService.getPublishedBlogs().catch(() =>
+          contentService.getAll()
+        );
         setItems((res.data || []).filter((c) => c.isPublished !== false));
       } catch {
         setItems([]);

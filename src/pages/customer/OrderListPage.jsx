@@ -29,27 +29,8 @@ const OrderListPage = () => {
       setOrders(res.data || []);
     } catch (err) {
       console.error(err);
-      // demo fallback so the order flow is viewable without a backend
-      setOrders([
-        {
-          id: 1001,
-          items: [{}, {}],
-          status: "Completed",
-          totalPrice: 7000000,
-        },
-        {
-          id: 1002,
-          items: [{}],
-          status: "Shipping",
-          totalPrice: 2000000,
-        },
-        {
-          id: 1003,
-          items: [{}, {}, {}],
-          status: "Pending",
-          totalPrice: 8500000,
-        },
-      ]);
+      setOrders([]);
+      setError("Không tải được đơn hàng");
     } finally {
       setLoading(false);
     }

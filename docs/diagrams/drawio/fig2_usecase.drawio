@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mxfile host="app.diagrams.net" modified="2026-07-24T00:00:00.000Z" agent="InteriorStudio" version="22.0.0">
+  <diagram id="fig2_usecase" name="fig2_usecase">
+    <mxGraphModel dx="1200" dy="800" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1169" pageHeight="827" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+<mxCell id="sys" value="Interior Studio" style="rounded=0;whiteSpace=wrap;html=1;verticalAlign=top;fillColor=none;align=center;fontStyle=1" parent="1" vertex="1">
+  <mxGeometry x="260" y="40" width="520" height="520" as="geometry" />
+</mxCell>
+<mxCell id="u1" value="Browse products / design / blog" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;" parent="1" vertex="1">
+  <mxGeometry x="340" y="80" width="200" height="55" as="geometry" />
+</mxCell>
+<mxCell id="u2" value="Register / Login / Reset password" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;" parent="1" vertex="1">
+  <mxGeometry x="340" y="150" width="200" height="55" as="geometry" />
+</mxCell>
+<mxCell id="u3" value="Cart, checkout, track orders" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;" parent="1" vertex="1">
+  <mxGeometry x="340" y="220" width="200" height="55" as="geometry" />
+</mxCell>
+<mxCell id="u4" value="Chat, quotation, design request" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;" parent="1" vertex="1">
+  <mxGeometry x="340" y="290" width="200" height="55" as="geometry" />
+</mxCell>
+<mxCell id="u5" value="Update order / quote / design request" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;" parent="1" vertex="1">
+  <mxGeometry x="340" y="360" width="200" height="55" as="geometry" />
+</mxCell>
+<mxCell id="u6" value="Manage catalog, prices, concepts, analytics" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;" parent="1" vertex="1">
+  <mxGeometry x="320" y="430" width="200" height="55" as="geometry" />
+</mxCell>
+<mxCell id="u7" value="Manage users, page ACL, CMS, system logs" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;" parent="1" vertex="1">
+  <mxGeometry x="320" y="500" width="200" height="55" as="geometry" />
+</mxCell>
+<mxCell id="ag" value="Guest" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;outlineConnect=0;" parent="1" vertex="1">
+  <mxGeometry x="40" y="90" width="40" height="80" as="geometry" />
+</mxCell>
+<mxCell id="e_ag_u1" value="" style="endArrow=block;html=1;endFill=1;edgeStyle=orthogonalEdgeStyle;" parent="1" edge="1" source="ag" target="u1">
+  <mxGeometry relative="1" as="geometry" />
+</mxCell>
+<mxCell id="e_ag_u2" value="" style="endArrow=block;html=1;endFill=1;edgeStyle=orthogonalEdgeStyle;" parent="1" edge="1" source="ag" target="u2">
+  <mxGeometry relative="1" as="geometry" />
+</mxCell>
+<mxCell id="ac" value="Customer" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;outlineConnect=0;" parent="1" vertex="1">
+  <mxGeometry x="40" y="200" width="40" height="80" as="geometry" />
+</mxCell>
+<mxCell id="e_ac_u1" value="" style="endArrow=block;html=1;endFill=1;edgeStyle=orthogonalEdgeStyle;" parent="1" edge="1" source="ac" target="u1">
+  <mxGeometry relative="1" as="geometry" />
+</mxCell>
+<mxCell id="e_ac_u2" value="" style="endArrow=block;html=1;endFill=1;edgeStyle=orthogonalEdgeStyle;" parent="1" edge="1" source="ac" target="u2">
+  <mxGeometry relative="1" as="geometry" />
+</mxCell>
+<mxCell id="e_ac_u3" value="" style="endArrow=block;html=1;endFill=1;edgeStyle=orthogonalEdgeStyle;" parent="1" edge="1" source="ac" target="u3">
+  <mxGeometry relative="1" as="geometry" />
+</mxCell>
+<mxCell id="e_ac_u4" value="" style="endArrow=block;html=1;endFill=1;edgeStyle=orthogonalEdgeStyle;" parent="1" edge="1" source="ac" target="u4">
+  <mxGeometry relative="1" as="geometry" />
+</mxCell>
+<mxCell id="as" value="Sales" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;outlineConnect=0;" parent="1" vertex="1">
+  <mxGeometry x="40" y="320" width="40" height="80" as="geometry" />
+</mxCell>
+<mxCell id="e_as_u4" value="" style="endArrow=block;html=1;endFill=1;edgeStyle=orthogonalEdgeStyle;" parent="1" edge="1" source="as" target="u4">
+  <mxGeometry relative="1" as="geometry" />
+</mxCell>
+<mxCell id="e_as_u5" value="" style="endArrow=block;html=1;endFill=1;edgeStyle=orthogonalEdgeStyle;" parent="1" edge="1" source="as" target="u5">
+  <mxGeometry relative="1" as="geometry" />
+</mxCell>
+<mxCell id="am" value="Manager" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;outlineConnect=0;" parent="1" vertex="1">
+  <mxGeometry x="40" y="410" width="40" height="80" as="geometry" />
+</mxCell>
+<mxCell id="e_am_u6" value="" style="endArrow=block;html=1;endFill=1;edgeStyle=orthogonalEdgeStyle;" parent="1" edge="1" source="am" target="u6">
+  <mxGeometry relative="1" as="geometry" />
+</mxCell>
+<mxCell id="aa" value="Admin" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;outlineConnect=0;" parent="1" vertex="1">
+  <mxGeometry x="40" y="500" width="40" height="80" as="geometry" />
+</mxCell>
+<mxCell id="e_aa_u7" value="" style="endArrow=block;html=1;endFill=1;edgeStyle=orthogonalEdgeStyle;" parent="1" edge="1" source="aa" target="u7">
+  <mxGeometry relative="1" as="geometry" />
+</mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

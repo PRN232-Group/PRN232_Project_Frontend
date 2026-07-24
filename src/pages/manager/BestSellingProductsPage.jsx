@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
-import { analyticsService } from "../../application/services";
+import { analyticsService, productService } from "../../application/services";
 import { formatVnd, discountPct } from "../../domain/roles";
-import { productService } from "../../application/services";
+import { notifyError } from "../../application/services/notify";
 
 const BestSellingProductsPage = () => {
   const [rows, setRows] = useState([]);
@@ -20,10 +20,13 @@ const BestSellingProductsPage = () => {
         analyticsService.getBestSelling(),
         productService.getAll(),
       ]);
-      setRows(bRes.data || []);
-      setCatalog(pRes.data || []);
+      setRows(Array.isArray(bRes.data) ? bRes.data : []);
+      setCatalog(Array.isArray(pRes.data) ? pRes.data : []);
     } catch (e) {
       console.error(e);
+      notifyError("Không tải được sản phẩm bán chạy");
+      setRows([]);
+      setCatalog([]);
     } finally {
       setLoading(false);
     }
@@ -31,9 +34,12 @@ const BestSellingProductsPage = () => {
 
   const enriched = rows
     .map((r) => {
-      const p = catalog.find((x) => x.id === (r.id || r.productId));
+      const pid = r.productId ?? r.id;
+      const p = catalog.find((x) => Number(x.id) === Number(pid));
       return {
         ...r,
+        productId: pid,
+        name: r.name || p?.name || `SP #${pid}`,
         imageUrl: p?.imageUrl,
         marketPrice: p?.marketPrice,
         stock: p?.stock,
@@ -48,7 +54,8 @@ const BestSellingProductsPage = () => {
     <div className="staff-page">
       <h2>Sản phẩm bán chạy</h2>
       <p className="staff-page-sub">
-        Dựa trên đơn hàng mock — kèm tồn kho và % giảm so thị trường.
+        Tổng hợp từ đơn hàng thực tế (trừ đơn đã hủy) — kèm tồn kho và % giảm so
+        thị trường.
       </p>
 
       <div className="staff-toolbar">
@@ -80,7 +87,7 @@ const BestSellingProductsPage = () => {
             {enriched.map((p, i) => {
               const pct = discountPct(p.price, p.marketPrice);
               return (
-                <tr key={p.id || p.productId || i}>
+                <tr key={p.productId || i}>
                   <td>{i + 1}</td>
                   <td>
                     <div className="staff-product-cell">
@@ -90,7 +97,7 @@ const BestSellingProductsPage = () => {
                       </div>
                     </div>
                   </td>
-                  <td>{p.soldQuantity ?? p.sold}</td>
+                  <td>{p.soldQuantity ?? p.sold ?? 0}</td>
                   <td className="staff-price">{formatVnd(p.revenue)}</td>
                   <td>{p.stock ?? "—"}</td>
                   <td>
@@ -106,7 +113,7 @@ const BestSellingProductsPage = () => {
             {!loading && enriched.length === 0 && (
               <tr>
                 <td colSpan={6} className="staff-empty">
-                  Chưa có dữ liệu bán chạy
+                  Chưa có dữ liệu bán chạy — cần có đơn hàng chưa hủy.
                 </td>
               </tr>
             )}

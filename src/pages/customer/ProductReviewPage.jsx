@@ -27,17 +27,8 @@ const ProductReviewPage = () => {
       setReviews(res.data || []);
     } catch (err) {
       console.error(err);
-
-      // fallback demo
-      setReviews([
-        {
-          id: 1,
-          userName: "Nguyen A",
-          rating: 5,
-          comment: "Sản phẩm rất tốt!",
-          createdAt: new Date().toISOString(),
-        },
-      ]);
+      setReviews([]);
+      setError("Không tải được đánh giá");
     } finally {
       setLoading(false);
     }

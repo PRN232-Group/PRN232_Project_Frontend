@@ -1,0 +1,24 @@
+@startuml seq_checkout
+!theme plain
+skinparam shadowing false
+skinparam backgroundColor white
+skinparam sequenceMessageAlign center
+
+actor Customer
+participant "CheckoutPage" as UI
+participant "OrdersController" as Ctrl
+participant "OrderService" as Svc
+database "SQL Server" as DB
+
+Customer -> UI : address + phone + confirm
+UI -> Ctrl : POST /api/orders/checkout
+Ctrl -> Svc : CheckoutAsync
+Svc -> DB : BEGIN TRAN
+Svc -> DB : re-check stock
+Svc -> DB : insert Order + OrderItems
+Svc -> DB : decrement Stock\nclear CartItems
+Svc -> DB : COMMIT
+Svc --> Ctrl : OrderDto (Pending)
+Ctrl --> UI : 200
+UI --> Customer : redirect /orders/:id
+@enduml

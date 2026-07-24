@@ -1,0 +1,21 @@
+@startuml fig2b_uc_guest
+!theme plain
+skinparam shadowing false
+skinparam backgroundColor white
+skinparam actorStyle awesome
+left to right direction
+
+actor Guest
+rectangle "Interior Studio" {
+  usecase "Browse / search products" as A
+  usecase "View product detail" as B
+  usecase "View design gallery" as C
+  usecase "View blog" as D
+  usecase "Register / Login" as E
+}
+Guest --> A
+Guest --> B
+Guest --> C
+Guest --> D
+Guest --> E
+@enduml

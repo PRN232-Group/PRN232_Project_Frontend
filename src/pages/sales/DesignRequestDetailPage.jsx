@@ -8,6 +8,13 @@ import {
 import { notifySuccess, notifyError } from "../../application/services/notify";
 import { formatVnd, discountPct } from "../../domain/roles";
 
+/** Forward-only: New → InReview → Quoted → Done */
+const NEXT_STATUS = {
+  New: "InReview",
+  InReview: "Quoted",
+  Quoted: "Done",
+};
+
 const DesignRequestDetailPage = () => {
   const { id } = useParams();
   const [list, setList] = useState([]);
@@ -15,8 +22,7 @@ const DesignRequestDetailPage = () => {
   const [concept, setConcept] = useState(null);
   const [related, setRelated] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [note, setNote] = useState("");
-  const [status, setStatus] = useState("");
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     if (id) fetchDetail();
@@ -30,6 +36,7 @@ const DesignRequestDetailPage = () => {
       setList(res.data || []);
     } catch (err) {
       console.error(err);
+      notifyError("Không tải được danh sách yêu cầu thiết kế");
     } finally {
       setLoading(false);
     }
@@ -41,8 +48,6 @@ const DesignRequestDetailPage = () => {
       const res = await designRequestService.getById(id);
       const req = res.data;
       setRequest(req);
-      setStatus(req.status);
-      setNote(req.note || req.notes || "");
 
       if (req.interiorDesignId) {
         try {
@@ -59,6 +64,8 @@ const DesignRequestDetailPage = () => {
             req.relatedProductIds.includes(p.id)
           )
         );
+      } else {
+        setRelated([]);
       }
     } catch (err) {
       console.error(err);
@@ -68,22 +75,33 @@ const DesignRequestDetailPage = () => {
     }
   };
 
-  const handleUpdate = async () => {
+  const handleAdvanceStatus = async () => {
+    if (!request) return;
+    const next = NEXT_STATUS[request.status];
+    if (!next) {
+      notifyError("Yêu cầu đã hoàn tất");
+      return;
+    }
     try {
-      await designRequestService.update(id, {
-        status,
-        note,
-        notes: note,
-      });
-      notifySuccess("Đã cập nhật yêu cầu thiết kế");
+      setSaving(true);
+      await designRequestService.updateStatus(id, next);
+      notifySuccess(`Đã chuyển trạng thái → ${next}`);
       fetchDetail();
-    } catch {
-      notifyError("Cập nhật thất bại");
+    } catch (err) {
+      notifyError(
+        err.response?.data?.message || "Cập nhật trạng thái thất bại"
+      );
+    } finally {
+      setSaving(false);
     }
   };
 
   if (loading) {
-    return <div className="staff-page"><p className="staff-status">Đang tải...</p></div>;
+    return (
+      <div className="staff-page">
+        <p className="staff-status">Đang tải...</p>
+      </div>
+    );
   }
 
   if (!id) {
@@ -120,7 +138,7 @@ const DesignRequestDetailPage = () => {
                   }}
                 >
                   <span>
-                    {r.customerName} · {r.style}
+                    {r.customerName} · {r.style || "—"}
                   </span>
                   <span className="staff-badge is-pending">{r.status}</span>
                 </div>
@@ -144,13 +162,15 @@ const DesignRequestDetailPage = () => {
     );
   }
 
+  const nextStatus = NEXT_STATUS[request.status];
+
   return (
     <div className="staff-page">
       <div className="staff-toolbar">
         <div style={{ flex: 1 }}>
           <h2 style={{ marginBottom: 4 }}>{request.title}</h2>
           <p className="staff-page-sub" style={{ margin: 0 }}>
-            #{request.id} · {request.customerName} · {request.style}
+            #{request.id} · {request.customerName} · {request.style || "—"}
           </p>
         </div>
         <Link to="/sales/design-requests" className="staff-btn staff-btn-ghost">
@@ -183,6 +203,13 @@ const DesignRequestDetailPage = () => {
         )}
       </div>
 
+      {request.notes && (
+        <div className="staff-panel" style={{ marginBottom: 16, padding: 16 }}>
+          <h3 style={{ marginTop: 0 }}>Ghi chú khách</h3>
+          <p style={{ margin: 0, whiteSpace: "pre-wrap" }}>{request.notes}</p>
+        </div>
+      )}
+
       {concept && (
         <div className="staff-panel" style={{ marginBottom: 16 }}>
           <div className="staff-panel-head">
@@ -204,18 +231,6 @@ const DesignRequestDetailPage = () => {
               }}
             />
             <p>{concept.description}</p>
-            {concept.priceCompare && (
-              <p>
-                Studio{" "}
-                <span className="staff-price">
-                  {formatVnd(concept.priceCompare.studio)}
-                </span>{" "}
-                · TT{" "}
-                <span className="staff-price-market">
-                  {formatVnd(concept.priceCompare.marketAvg)}
-                </span>
-              </p>
-            )}
           </div>
         </div>
       )}
@@ -232,7 +247,6 @@ const DesignRequestDetailPage = () => {
                 <th>Kho</th>
                 <th>Giá / TT</th>
                 <th>Giảm</th>
-                <th>Thông số</th>
               </tr>
             </thead>
             <tbody>
@@ -267,18 +281,12 @@ const DesignRequestDetailPage = () => {
                         "—"
                       )}
                     </td>
-                    <td>
-                      <ul className="staff-specs-mini">
-                        {p.specs?.material && <li>{p.specs.material}</li>}
-                        {p.specs?.origin && <li>XQ: {p.specs.origin}</li>}
-                      </ul>
-                    </td>
                   </tr>
                 );
               })}
               {related.length === 0 && (
                 <tr>
-                  <td colSpan={5} className="staff-empty">
+                  <td colSpan={4} className="staff-empty">
                     Chưa có sản phẩm liên quan
                   </td>
                 </tr>
@@ -290,32 +298,31 @@ const DesignRequestDetailPage = () => {
 
       <div className="staff-panel">
         <div className="staff-panel-head">
-          <h3>Cập nhật xử lý</h3>
+          <h3>Cập nhật trạng thái</h3>
         </div>
         <div style={{ padding: 16 }}>
-          <div className="staff-form-grid">
-            <div className="staff-field">
-              <label>Trạng thái</label>
-              <select value={status} onChange={(e) => setStatus(e.target.value)}>
-                <option value="New">New</option>
-                <option value="InReview">InReview</option>
-                <option value="Quoted">Quoted</option>
-                <option value="Done">Done</option>
-              </select>
-            </div>
-            <div className="staff-field full">
-              <label>Ghi chú</label>
-              <textarea value={note} onChange={(e) => setNote(e.target.value)} />
-            </div>
-          </div>
-          <button
-            type="button"
-            className="staff-btn staff-btn-primary"
-            style={{ marginTop: 12 }}
-            onClick={handleUpdate}
-          >
-            Lưu cập nhật
-          </button>
+          <p className="staff-page-sub" style={{ marginTop: 0 }}>
+            Forward-only: New → InReview → Quoted → Done. Khách theo dõi tại{" "}
+            <code>/my-design-requests</code> (tự làm mới).
+          </p>
+          {nextStatus ? (
+            <button
+              type="button"
+              className="staff-btn staff-btn-primary"
+              disabled={saving}
+              onClick={handleAdvanceStatus}
+            >
+              {saving ? "Đang lưu..." : `Chuyển → ${nextStatus}`}
+            </button>
+          ) : (
+            <span className="staff-badge is-active">Đã hoàn tất (Done)</span>
+          )}
+          {request.updatedAt && (
+            <p className="staff-page-sub" style={{ marginTop: 12 }}>
+              Cập nhật lần cuối:{" "}
+              {new Date(request.updatedAt).toLocaleString("vi-VN")}
+            </p>
+          )}
         </div>
       </div>
     </div>

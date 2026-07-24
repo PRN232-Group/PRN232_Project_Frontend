@@ -1,0 +1,25 @@
+@startuml fig2c_uc_customer
+!theme plain
+skinparam shadowing false
+skinparam backgroundColor white
+skinparam actorStyle awesome
+left to right direction
+
+actor Customer
+rectangle "Interior Studio" {
+  usecase "Manage cart" as A
+  usecase "Checkout order" as B
+  usecase "Track orders" as C
+  usecase "Chat with Sales" as D
+  usecase "Quotation & design request" as E
+  usecase "Write product review" as F
+  usecase "Manage profile" as G
+}
+Customer --> A
+Customer --> B
+Customer --> C
+Customer --> D
+Customer --> E
+Customer --> F
+Customer --> G
+@enduml

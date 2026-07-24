@@ -1,5 +1,5 @@
 /**
- * Domain: unified order lifecycle (shared across Customer / Sales / Manager / Production).
+ * Domain: unified order lifecycle (shared across Customer / Sales / Manager).
  */
 
 export const ORDER_STATUS = Object.freeze({

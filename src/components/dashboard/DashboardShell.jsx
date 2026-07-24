@@ -136,6 +136,11 @@ const MENUS = {
             icon: <BarChartOutlined />,
             label: <Link to="/manager/revenue">Doanh thu</Link>,
           },
+          {
+            key: "/manager/orders",
+            icon: <FileDoneOutlined />,
+            label: <Link to="/manager/orders">Đơn hàng (QL)</Link>,
+          },
         ],
       },
       {
@@ -204,6 +209,11 @@ const MENUS = {
         key: "/manager/revenue",
         icon: <BarChartOutlined />,
         label: <Link to="/manager/revenue">Doanh thu</Link>,
+      },
+      {
+        key: "/manager/orders",
+        icon: <FileDoneOutlined />,
+        label: <Link to="/manager/orders">Đơn hàng</Link>,
       },
     ],
   },

@@ -37,6 +37,9 @@ const OrderListPage = lazy(() => import("../pages/customer/OrderListPage"));
 const OrderDetailPage = lazy(() => import("../pages/customer/OrderDetailPage"));
 const CustomerChatPage = lazy(() => import("../pages/customer/CustomerChatPage"));
 const MyQuotationsPage = lazy(() => import("../pages/customer/MyQuotationsPage"));
+const MyDesignRequestsPage = lazy(() =>
+  import("../pages/customer/MyDesignRequestsPage")
+);
 const ProductReviewPage = lazy(() => import("../pages/customer/ProductReviewPage"));
 const BlogListPage = lazy(() =>
   import("../pages/customer/BlogPages").then((m) => ({ default: m.BlogListPage }))
@@ -60,6 +63,7 @@ const DesignManagementPage = lazy(() => import("../pages/manager/DesignManagemen
 const PriceManagementPage = lazy(() => import("../pages/manager/PriceManagementPage"));
 const BestSellingProductsPage = lazy(() => import("../pages/manager/BestSellingProductsPage"));
 const RevenueReportPage = lazy(() => import("../pages/manager/RevenueReportPage"));
+const OrderManagementPage = lazy(() => import("../pages/manager/OrderManagementPage"));
 
 /* ===== SALES ===== */
 const SalesDashboardPage = lazy(() => import("../pages/sales/SalesDashboardPage"));
@@ -95,6 +99,7 @@ export const router = createBrowserRouter([
       { path: "orders/:id", element: load(OrderDetailPage) },
       { path: "chat", element: load(CustomerChatPage) },
       { path: "my-quotations", element: load(MyQuotationsPage) },
+      { path: "my-design-requests", element: load(MyDesignRequestsPage) },
       { path: "review", element: load(ProductReviewPage) },
       { path: "products/:id/review", element: load(ProductReviewPage) },
     ],
@@ -111,7 +116,6 @@ export const router = createBrowserRouter([
       { path: "categories", element: load(CategoryManagementPage) },
       { path: "contents", element: load(ContentManagementPage) },
       { path: "system-logs", element: load(SystemLogPage) },
-      /* Alias: danh mục chuẩn nằm ở /manager/categories */
       {
         path: "orders",
         element: <Navigate to="/sales/orders" replace />,
@@ -131,10 +135,7 @@ export const router = createBrowserRouter([
       { path: "prices", element: load(PriceManagementPage) },
       { path: "best-selling", element: load(BestSellingProductsPage) },
       { path: "revenue", element: load(RevenueReportPage) },
-      {
-        path: "orders",
-        element: <Navigate to="/manager" replace />,
-      },
+      { path: "orders", element: load(OrderManagementPage) },
     ],
   },
 

@@ -62,15 +62,19 @@ export const categoryService = {
 
 export const contentService = {
   getAll: () => apiClient.get("/api/contents"),
+  /** Phú: alias published Blog only — dùng cho storefront /blog */
+  getPublishedBlogs: () => apiClient.get("/api/Blog"),
   getById: (id) => apiClient.get(`/api/contents/${id}`),
-  getBySlug: (slug) => apiClient.get(`/api/contents/by-slug/${encodeURIComponent(slug)}`),
+  getBySlug: (slug) =>
+    apiClient.get(`/api/contents/by-slug/${encodeURIComponent(slug)}`),
   create: (body) => apiClient.post("/api/contents", body),
   update: (id, body) => apiClient.put(`/api/contents/${id}`, body),
   remove: (id) => apiClient.delete(`/api/contents/${id}`),
 };
 
 export const systemLogService = {
-  getAll: () => apiClient.get("/api/systemlogs"),
+  /** @param {object} [params] action, entity, from, to, page, pageSize */
+  getAll: (params) => apiClient.get("/api/systemlogs", { params }),
 };
 
 export const reviewService = {
@@ -105,8 +109,12 @@ export const quotationService = {
 
 export const designRequestService = {
   getAll: () => apiClient.get("/api/design-requests"),
+  getMine: () => apiClient.get("/api/design-requests/mine"),
   getById: (id) => apiClient.get(`/api/design-requests/${id}`),
-  update: (id, body) => apiClient.put(`/api/design-requests/${id}`, body),
+  create: (body) => apiClient.post("/api/design-requests", body),
+  /** BE chỉ nhận { status } — forward-only New→InReview→Quoted→Done */
+  updateStatus: (id, status) =>
+    apiClient.put(`/api/design-requests/${id}`, { status }),
 };
 
 export const interiorDesignService = {
@@ -117,26 +125,11 @@ export const interiorDesignService = {
   remove: (id) => apiClient.delete(`/api/interior-designs/${id}`),
 };
 
-export const productionService = {
-  getDashboard: () => apiClient.get("/api/production/dashboard"),
-  getOrders: () => apiClient.get("/api/production/orders"),
-  getOrder: (id) => apiClient.get(`/api/production/orders/${id}`),
-  updateStatus: (id, status) =>
-    apiClient.put(`/api/production/orders/${id}/status`, { status }),
-  getProgress: () => apiClient.get("/api/production/progress"),
-};
-
-export const deliveryService = {
-  getOrders: () => apiClient.get("/api/delivery/orders"),
-  update: (orderId, body) =>
-    apiClient.put(`/api/delivery/orders/${orderId}`, body),
-};
-
 export const analyticsService = {
   getManagerDashboard: () => apiClient.get("/api/analytics/dashboard"),
   getBestSelling: () =>
     apiClient.get("/api/analytics/best-selling-products"),
-  getRevenueReport: () => apiClient.get("/api/revenue/report"),
+  getRevenueReport: (params) =>
+    apiClient.get("/api/revenue/report", { params }),
   getSalesDashboard: () => apiClient.get("/api/sales/dashboard"),
-  getBlogPosts: () => apiClient.get("/api/Blog"),
 };

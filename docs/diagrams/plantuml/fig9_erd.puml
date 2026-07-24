@@ -1,0 +1,216 @@
+@startuml fig9_erd
+!theme plain
+skinparam shadowing false
+skinparam backgroundColor white
+skinparam linetype ortho
+
+entity "Users" as User {
+  * Id : INT <<PK>>
+  --
+  * RoleId : INT <<FK>>
+  * Email : NVARCHAR(256)
+  * PasswordHash : NVARCHAR(512)
+  * FullName : NVARCHAR(150)
+  Phone : NVARCHAR(30)
+  AvatarUrl : NVARCHAR(500)
+  Address : NVARCHAR(500)
+  * IsLocked : BIT
+  * IsActive : BIT
+  * IsDeleted : BIT
+  * CreatedAt : DATETIME2
+  UpdatedAt : DATETIME2
+}
+
+entity "Roles" as Role {
+  * Id : INT <<PK>>
+  --
+  * Name : NVARCHAR(50)
+  Description : NVARCHAR(255)
+}
+
+entity "RolePermissions" as RP {
+  * RoleId : INT <<PK,FK>>
+  * PageId : INT <<PK,FK>>
+}
+
+entity "AppPages" as AP {
+  * Id : INT <<PK>>
+  --
+  * PageKey : NVARCHAR(120)
+  * Name : NVARCHAR(150)
+  * Section : NVARCHAR(30)
+}
+
+entity "Products" as Product {
+  * Id : INT <<PK>>
+  --
+  CategoryId : INT <<FK>>
+  * Name : NVARCHAR(200)
+  * Price : DECIMAL(18,2)
+  MarketPrice : DECIMAL(18,2)
+  * Stock : INT
+  ImageUrl : NVARCHAR(500)
+  * IsActive : BIT
+  * IsDeleted : BIT
+}
+
+entity "Categories" as Category {
+  * Id : INT <<PK>>
+  --
+  * Name : NVARCHAR(120)
+  * IsActive : BIT
+}
+
+entity "ProductSpecs" as Spec {
+  * ProductId : INT <<PK,FK>>
+  --
+  Dimensions
+  Material
+  Origin
+  Finish
+  WeightKg
+  WarrantyMonths
+}
+
+entity "CartItems" as CartItem {
+  * Id : INT <<PK>>
+  --
+  * CartId : INT <<FK>>
+  * ProductId : INT <<FK>>
+  * Quantity : INT
+}
+
+entity "Orders" as Order {
+  * Id : INT <<PK>>
+  --
+  * CustomerId : INT <<FK>>
+  * Status : NVARCHAR(30)
+  * TotalPrice : DECIMAL(18,2)
+  * ShippingAddress : NVARCHAR(500)
+  * Phone : NVARCHAR(30)
+  CustomerName
+  CustomerEmail
+  Note
+  * CreatedAt : DATETIME2
+}
+
+entity "OrderItems" as OrderItem {
+  * Id : INT <<PK>>
+  --
+  * OrderId : INT <<FK>>
+  * ProductId : INT <<FK>>
+  * ProductName : NVARCHAR(200)
+  * UnitPrice : DECIMAL(18,2)
+  * Quantity : INT
+}
+
+entity "InteriorDesigns" as ID {
+  * Id : INT <<PK>>
+  --
+  * Title
+  Category
+  Style
+  ImageUrl
+  AreaSqm
+  BudgetFrom / BudgetTo
+  * IsPublished : BIT
+}
+
+entity "DesignRequests" as DR {
+  * Id : INT <<PK>>
+  --
+  * CustomerId : INT <<FK>>
+  InteriorDesignId : INT <<FK>>
+  * Title
+  Style
+  Budget
+  * Status : NVARCHAR(30)
+  Notes
+  AssignedToId
+}
+
+entity "QuotationRequests" as QR {
+  * Id : INT <<PK>>
+  --
+  * CustomerId : INT <<FK>>
+  * Title
+  * Status
+  Reply
+  HandledById
+}
+
+entity "Quotations" as Q {
+  * Id : INT <<PK>>
+  --
+  QuotationRequestId : INT <<FK>>
+  * CustomerId : INT <<FK>>
+  * Amount : DECIMAL(18,2)
+  * Status
+  CreatedById
+  ApprovedById
+}
+
+entity "ChatThreads" as CT {
+  * Id : INT <<PK>>
+  --
+  * CustomerId : INT <<FK>> <<UQ>>
+  * UpdatedAt
+}
+
+entity "ChatMessages" as CM {
+  * Id : INT <<PK>>
+  --
+  * ThreadId : INT <<FK>>
+  * SenderId : INT <<FK>>
+  * SenderRole
+  * Content
+}
+
+entity "Contents" as Content {
+  * Id : INT <<PK>>
+  --
+  * Title
+  * Slug <<UQ>>
+  * Type
+  * IsPublished
+}
+
+entity "EmailOtps" as OTP {
+  * Id : INT <<PK>>
+  --
+  * Email
+  * Purpose
+  * Otp
+  Payload
+  ResetToken
+  * ExpiresAt
+  UsedAt
+}
+
+entity "SystemLogs" as Log {
+  * Id : BIGINT <<PK>>
+  --
+  ActorUserId : INT <<FK>>
+  * Action
+  Entity
+  EntityId
+  Detail
+  * CreatedAt
+}
+
+Role ||--o{ User
+Role ||--o{ RP
+AP ||--o{ RP
+Category ||--o{ Product
+Product ||--|| Spec
+User ||--|| CT
+CT ||--o{ CM
+User ||--o{ Order
+Order ||--o{ OrderItem
+Product ||--o{ OrderItem
+User ||--o{ DR
+User ||--o{ QR
+QR ||--o| Q
+ID ||--o{ DR
+
+@enduml

@@ -1,0 +1,21 @@
+@startuml seq_login
+!theme plain
+skinparam shadowing false
+skinparam backgroundColor white
+skinparam sequenceMessageAlign center
+
+actor Customer
+participant "React\n/login" as UI
+participant "AuthController" as Ctrl
+participant "AuthService" as Svc
+database "SQL Server" as DB
+
+Customer -> UI : email + password
+UI -> Ctrl : POST /api/auth/login
+Ctrl -> Svc : LoginAsync
+Svc -> DB : read User + RolePermissions
+Svc -> Svc : BCrypt verify\ncheck IsLocked / IsActive
+Svc --> Ctrl : JWT + user + permissions
+Ctrl --> UI : 200 accessToken
+UI --> Customer : navigate ROLE_LANDING
+@enduml

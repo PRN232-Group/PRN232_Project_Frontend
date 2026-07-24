@@ -1,0 +1,19 @@
+@startuml fig2d_uc_sales
+!theme plain
+skinparam shadowing false
+skinparam backgroundColor white
+skinparam actorStyle awesome
+left to right direction
+
+actor Sales
+rectangle "Interior Studio" {
+  usecase "Update order status" as A
+  usecase "Handle quotations" as B
+  usecase "Handle design requests" as C
+  usecase "Chat with customers" as D
+}
+Sales --> A
+Sales --> B
+Sales --> C
+Sales --> D
+@enduml

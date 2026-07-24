@@ -1,28 +1,17 @@
 /**
  * Install axios adapter that serves mock JSON when mock mode is on.
  *
- * Turn OFF later:
- *   1. Set VITE_USE_MOCK=false and set VITE_API_BASE_URL to real API
- *   2. Optionally delete folder src/infrastructure/mock/
- *   3. Remove the installMockApi() call from main.jsx
+ * Bật mock: VITE_USE_MOCK=true
+ * Tắt mock (API thật): VITE_USE_MOCK=false + VITE_API_BASE_URL
  */
 import { handleMockRequest } from "./handlers";
 
-/**
- * Mock is ON when:
- * - VITE_USE_MOCK=true, OR
- * - VITE_USE_MOCK unset and no VITE_API_BASE_URL (Vercel / preview without backend)
- *
- * Explicit VITE_USE_MOCK=false always disables mock.
- */
+/** Chỉ bật khi VITE_USE_MOCK=true tường minh — không auto-fallback. */
 export const isMockEnabled = () => {
   const flag = String(import.meta.env.VITE_USE_MOCK ?? "")
     .trim()
     .toLowerCase();
-  if (flag === "true") return true;
-  if (flag === "false") return false;
-  const api = String(import.meta.env.VITE_API_BASE_URL || "").trim();
-  return !api;
+  return flag === "true";
 };
 
 export function installMockApi(apiClient) {

@@ -1,0 +1,21 @@
+@startuml fig2e_uc_manager
+!theme plain
+skinparam shadowing false
+skinparam backgroundColor white
+skinparam actorStyle awesome
+left to right direction
+
+actor Manager
+rectangle "Interior Studio" {
+  usecase "CRUD products / categories" as A
+  usecase "Update prices" as B
+  usecase "CRUD design concepts" as C
+  usecase "View best-selling & revenue" as D
+  usecase "Monitor orders" as E
+}
+Manager --> A
+Manager --> B
+Manager --> C
+Manager --> D
+Manager --> E
+@enduml

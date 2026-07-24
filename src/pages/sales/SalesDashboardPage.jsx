@@ -1,17 +1,21 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { analyticsService } from "../../application/services";
+import { notifyError } from "../../application/services/notify";
 
 const SalesDashboardPage = () => {
   const navigate = useNavigate();
   const [stats, setStats] = useState({
-    totalRequests: 0,
-    pendingRequests: 0,
-    totalQuotations: 0,
-    approvedQuotations: 0,
+    pendingOrders: 0,
+    quotations: 0,
+    designRequests: 0,
+    chats: 0,
+    pendingQuotationRequests: 0,
+    processingOrders: 0,
   });
   const [recentRequests, setRecentRequests] = useState([]);
   const [recentQuotations, setRecentQuotations] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     fetchDashboard();
@@ -19,12 +23,27 @@ const SalesDashboardPage = () => {
 
   const fetchDashboard = async () => {
     try {
+      setLoading(true);
       const res = await analyticsService.getSalesDashboard();
-      setStats(res.data.stats || stats);
-      setRecentRequests(res.data.recentRequests || []);
-      setRecentQuotations(res.data.recentQuotations || []);
+      const d = res.data || {};
+      const s = d.stats || {};
+      setStats({
+        pendingOrders: d.pendingOrders ?? 0,
+        quotations: d.quotations ?? 0,
+        designRequests: d.designRequests ?? 0,
+        chats: d.chats ?? 0,
+        pendingQuotationRequests: s.pendingQuotationRequests ?? 0,
+        processingOrders: s.processingOrders ?? 0,
+      });
+      setRecentRequests(d.recentRequests || []);
+      setRecentQuotations(d.recentQuotations || []);
     } catch (err) {
       console.error(err);
+      notifyError("Không tải được tổng quan Sales");
+      setRecentRequests([]);
+      setRecentQuotations([]);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -36,22 +55,24 @@ const SalesDashboardPage = () => {
         hàng.
       </p>
 
+      {loading && <p className="staff-status">Đang tải...</p>}
+
       <div className="staff-kpi-grid">
         <div className="staff-kpi">
-          <span>Tổng yêu cầu</span>
-          <strong>{stats.totalRequests}</strong>
+          <span>Đơn chờ xử lý</span>
+          <strong className="is-clay">{stats.pendingOrders}</strong>
         </div>
         <div className="staff-kpi">
-          <span>Đang chờ</span>
-          <strong className="is-clay">{stats.pendingRequests}</strong>
+          <span>Yêu cầu BG chờ</span>
+          <strong>{stats.pendingQuotationRequests}</strong>
         </div>
         <div className="staff-kpi">
           <span>Báo giá</span>
-          <strong>{stats.totalQuotations}</strong>
+          <strong>{stats.quotations}</strong>
         </div>
         <div className="staff-kpi">
-          <span>Đã duyệt</span>
-          <strong>{stats.approvedQuotations}</strong>
+          <span>Yêu cầu thiết kế</span>
+          <strong>{stats.designRequests}</strong>
         </div>
       </div>
 
@@ -89,7 +110,7 @@ const SalesDashboardPage = () => {
       <div className="staff-split">
         <div className="staff-panel">
           <div className="staff-panel-head">
-            <h3>Yêu cầu gần đây</h3>
+            <h3>Yêu cầu báo giá gần đây</h3>
           </div>
           {recentRequests.length === 0 ? (
             <p className="staff-empty">Chưa có dữ liệu</p>
@@ -106,7 +127,7 @@ const SalesDashboardPage = () => {
                 }}
               >
                 <div>
-                  <b>{r.title}</b>
+                  <b>{r.title || `Yêu cầu #${r.id}`}</b>
                   <div style={{ fontSize: 13, color: "var(--muted)" }}>
                     {r.customerName}
                   </div>
@@ -135,7 +156,7 @@ const SalesDashboardPage = () => {
                 }}
               >
                 <div>
-                  <b>{q.title}</b>
+                  <b>{q.title || q.notes || `Báo giá #${q.id}`}</b>
                   <div style={{ fontSize: 13, color: "var(--muted)" }}>
                     {q.customerName}
                   </div>

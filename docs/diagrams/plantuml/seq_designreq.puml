@@ -1,0 +1,27 @@
+@startuml seq_designreq
+!theme plain
+skinparam shadowing false
+skinparam backgroundColor white
+skinparam sequenceMessageAlign center
+
+actor Customer
+actor Sales
+participant "MyDesignRequests" as CUI
+participant "DesignRequestDetail" as SUI
+participant "DesignRequestsController" as Ctrl
+participant "DesignRequestService" as Svc
+database "SQL Server" as DB
+
+Customer -> CUI : submit form
+CUI -> Ctrl : POST /api/design-requests
+Ctrl -> Svc : Create (Status=New)
+Svc -> DB : insert DesignRequest
+Svc --> CUI : DesignRequestDto
+
+Sales -> SUI : open request
+SUI -> Ctrl : PUT status (next step)
+Ctrl -> Svc : ForwardStatusMap\n(+1 step only)
+Svc -> DB : update Status
+CUI -> Ctrl : GET mine (poll)
+Ctrl --> CUI : latest status
+@enduml

@@ -1,0 +1,19 @@
+@startuml fig2f_uc_admin
+!theme plain
+skinparam shadowing false
+skinparam backgroundColor white
+skinparam actorStyle awesome
+left to right direction
+
+actor Admin
+rectangle "Interior Studio" {
+  usecase "Manage users (CRUD / lock)" as A
+  usecase "Page permission matrix" as B
+  usecase "CMS contents" as C
+  usecase "View system logs" as D
+}
+Admin --> A
+Admin --> B
+Admin --> C
+Admin --> D
+@enduml

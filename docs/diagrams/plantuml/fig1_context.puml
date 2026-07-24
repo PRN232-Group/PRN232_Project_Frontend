@@ -1,0 +1,42 @@
+@startuml fig1_context
+!theme plain
+skinparam shadowing false
+skinparam backgroundColor white
+skinparam defaultFontName Arial
+skinparam actorStyle awesome
+skinparam componentStyle rectangle
+skinparam wrapWidth 180
+
+actor "Customer\n(browse, buy,\nask Sales)" as Customer
+actor "Sales\n(orders, quotes,\nchat, design req)" as Sales
+actor "Manager\n(catalog, price,\nconcepts, KPI)" as Manager
+actor "Admin\n(users, ACL,\nCMS, logs)" as Admin
+
+rectangle "Interior Studio" {
+  component "React SPA (Vite)\nstorefront + staff dashboards" as FE
+  component "ASP.NET Core Web API\nJWT / Controllers / Services" as API
+}
+
+database "SQL Server\nInteriorStudio DB" as DB
+cloud "SMTP server\n(email OTP)" as SMTP
+
+Customer --> FE : HTTPS
+Sales --> FE : HTTPS
+Manager --> FE : HTTPS
+Admin --> FE : HTTPS
+
+FE --> API : REST JSON\n+ Bearer token
+API --> DB : EF Core read/write
+API --> SMTP : send OTP\n(register / reset)
+
+note bottom of FE
+  UI only talks to API.
+  Mock off when integrating
+  (VITE_USE_MOCK=false).
+end note
+
+note bottom of API
+  Business rules live in Services.
+  Audit writes SystemLogs.
+end note
+@enduml

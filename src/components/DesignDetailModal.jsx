@@ -357,11 +357,19 @@ export default function DesignDetailModal({
               </button>
               <div className="design-modal-footer-actions">
                 <Link
-                  to="/chat"
+                  to="/my-design-requests"
+                  state={{ interiorDesignId: design.id }}
                   className="dm-btn dm-btn-primary"
                   onClick={onClose}
                 >
-                  Yêu cầu tư vấn
+                  Gửi yêu cầu thiết kế
+                </Link>
+                <Link
+                  to="/chat"
+                  className="dm-btn dm-btn-outline"
+                  onClick={onClose}
+                >
+                  Chat tư vấn
                 </Link>
                 {design.relatedProducts?.length > 0 && (
                   <>

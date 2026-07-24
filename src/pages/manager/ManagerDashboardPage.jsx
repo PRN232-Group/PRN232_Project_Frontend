@@ -22,11 +22,15 @@ const ManagerDashboardPage = () => {
       setLoading(true);
       const res = await analyticsService.getManagerDashboard();
       const d = res.data || {};
+      const best = d.bestSellingProduct;
       setStats({
         totalUsers: d.totalUsers ?? d.totalCustomers ?? 0,
         totalOrders: d.totalOrders ?? 0,
         totalRevenue: d.totalRevenue ?? 0,
-        bestSellingProduct: d.bestSellingProduct || "",
+        bestSellingProduct:
+          typeof best === "string"
+            ? best
+            : best?.name || "—",
       });
     } catch {
       setStats({
@@ -97,6 +101,13 @@ const ManagerDashboardPage = () => {
           onClick={() => navigate("/manager/prices")}
         >
           Bảng giá / giảm giá
+        </button>
+        <button
+          type="button"
+          className="staff-btn staff-btn-ghost"
+          onClick={() => navigate("/manager/best-selling")}
+        >
+          Bán chạy
         </button>
         <button
           type="button"

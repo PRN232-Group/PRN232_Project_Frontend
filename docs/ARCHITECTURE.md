@@ -11,7 +11,7 @@ src/
     storage/authStorage.js
   presentation/
     guards/               # Route protection
-  pages/                  # UI per role (Customer / Admin / Manager / Sales / Production)
+  pages/                  # UI per role (Customer / Admin / Manager / Sales)
   components/             # Shared UI (Header, Footer, DashboardShell)
   contexts/               # React Context (User)
   routers/                # Route table

@@ -149,6 +149,7 @@ button {
 .order-list-page,
 .order-detail-page,
 .profile-page,
+.design-req-page,
 .product-detail-page,
 .product-review-page,
 .customer-chat-page,
@@ -165,12 +166,7 @@ button {
 .quotation-request-page,
 .quotation-approval-page,
 .design-request-detail-page,
-.customer-chat-management-page,
-.production-dashboard,
-.production-order-list-page,
-.production-order-detail-page,
-.production-progress-page,
-.delivery-update-page {
+.customer-chat-management-page {
   max-width: 1240px;
   margin: 0 auto;
   padding: clamp(20px, 4vw, 40px);
@@ -184,11 +180,11 @@ button {
 .checkout-page > h2,
 .order-list-page > h2,
 .profile-page > h2,
+.design-req-page > h2,
 .product-review-page > h2,
 .customer-chat-page > h2,
 .manager-dashboard > h2,
 .sales-dashboard > h2,
-.production-dashboard > h2,
 .page > h2 {
   font-size: clamp(1.6rem, 3vw, 2.2rem);
   position: relative;
@@ -199,9 +195,9 @@ button {
 .cart-page > h2::after,
 .order-list-page > h2::after,
 .profile-page > h2::after,
+.design-req-page > h2::after,
 .manager-dashboard > h2::after,
 .sales-dashboard > h2::after,
-.production-dashboard > h2::after,
 .page > h2::after {
   content: "";
   position: absolute;
@@ -491,20 +487,17 @@ button {
    STATS / KPI CARDS (dashboards)
 ============================================================ */
 .manager-dashboard .grid,
-.sales-dashboard .grid,
-.production-dashboard .grid {
+.sales-dashboard .grid {
   grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
   margin-bottom: 30px;
 }
 .manager-dashboard .card,
-.sales-dashboard .card,
-.production-dashboard .card {
+.sales-dashboard .card {
   padding: 24px;
   border-left: 4px solid var(--clay);
 }
 .manager-dashboard .card h3,
-.sales-dashboard .card h3,
-.production-dashboard .card h3 {
+.sales-dashboard .card h3 {
   font-family: var(--font-sans);
   font-size: 0.82rem;
   letter-spacing: 0.08em;
@@ -513,8 +506,7 @@ button {
   font-weight: 600;
 }
 .manager-dashboard .card p,
-.sales-dashboard .card p,
-.production-dashboard .card p {
+.sales-dashboard .card p {
   font-family: var(--font-serif);
   font-size: 1.9rem;
   font-weight: 700;
@@ -522,8 +514,7 @@ button {
   margin: 6px 0 0;
 }
 .manager-dashboard .actions,
-.sales-dashboard .actions,
-.production-dashboard .actions {
+.sales-dashboard .actions {
   display: flex;
   flex-wrap: wrap;
   gap: 14px;

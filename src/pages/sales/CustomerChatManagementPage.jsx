@@ -1,11 +1,13 @@
 import React, { useEffect, useState, useRef } from "react";
 import { chatService } from "../../application/services";
+import { notifyError } from "../../application/services/notify";
 
 const CustomerChatManagementPage = () => {
   const [customers, setCustomers] = useState([]);
   const [selectedCustomer, setSelectedCustomer] = useState(null);
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
+  const [sending, setSending] = useState(false);
   const chatEndRef = useRef(null);
 
   useEffect(() => {
@@ -13,7 +15,7 @@ const CustomerChatManagementPage = () => {
   }, []);
 
   useEffect(() => {
-    if (selectedCustomer) fetchMessages(selectedCustomer.id);
+    if (selectedCustomer) fetchMessages(selectedCustomer.customerId);
   }, [selectedCustomer]);
 
   useEffect(() => {
@@ -26,6 +28,7 @@ const CustomerChatManagementPage = () => {
       setCustomers(res.data || []);
     } catch (err) {
       console.error(err);
+      notifyError("Không tải được danh sách hội thoại");
     }
   };
 
@@ -35,26 +38,28 @@ const CustomerChatManagementPage = () => {
       setMessages(res.data || []);
     } catch (err) {
       console.error(err);
+      setMessages([]);
     }
   };
 
   const sendMessage = async () => {
-    if (!input.trim() || !selectedCustomer) return;
     const text = input.trim();
-    const newMsg = {
-      sender: "staff",
-      content: text,
-      time: new Date().toISOString(),
-    };
+    if (!text || !selectedCustomer || sending) return;
+    setSending(true);
+    setInput("");
     try {
-      setMessages((prev) => [...prev, newMsg]);
-      setInput("");
-      await chatService.send({
-        customerId: selectedCustomer.id,
+      const res = await chatService.send({
+        customerId: selectedCustomer.customerId,
         content: text,
       });
+      setMessages((prev) => [...prev, res.data]);
+      fetchCustomers();
     } catch (err) {
       console.error(err);
+      notifyError(err.response?.data?.message || "Gửi tin nhắn thất bại");
+      setInput(text);
+    } finally {
+      setSending(false);
     }
   };
 
@@ -71,21 +76,21 @@ const CustomerChatManagementPage = () => {
           <div className="staff-chat-list-body">
             {customers.map((c) => (
               <button
-                key={c.id}
+                key={c.customerId}
                 type="button"
                 className={
-                  selectedCustomer?.id === c.id
+                  selectedCustomer?.customerId === c.customerId
                     ? "staff-chat-person is-active"
                     : "staff-chat-person"
                 }
                 onClick={() => setSelectedCustomer(c)}
               >
                 <span className="staff-chat-avatar">
-                  {(c.name || "?").charAt(0)}
+                  {(c.customerName || "?").charAt(0)}
                 </span>
                 <div>
-                  <strong>{c.name}</strong>
-                  <span>{c.email}</span>
+                  <strong>{c.customerName}</strong>
+                  <span>{c.lastMessage || c.customerEmail}</span>
                 </div>
               </button>
             ))}
@@ -98,26 +103,30 @@ const CustomerChatManagementPage = () => {
         <div className="staff-chat-main">
           {selectedCustomer ? (
             <>
-              <div className="staff-chat-header">{selectedCustomer.name}</div>
+              <div className="staff-chat-header">
+                {selectedCustomer.customerName}
+                <small style={{ display: "block", fontWeight: 400, opacity: 0.7 }}>
+                  {selectedCustomer.customerEmail}
+                </small>
+              </div>
               <div className="staff-chat-messages">
-                {messages.map((msg, index) => {
-                  const isStaff =
-                    msg.sender === "staff" ||
-                    msg.senderRole === "Sales" ||
-                    msg.senderRole === "staff";
+                {messages.map((msg) => {
+                  const isStaff = !msg.isFromCustomer;
+                  const time = msg.sentAt || msg.createdAt;
                   return (
                     <div
-                      key={index}
+                      key={msg.id}
                       className={
                         isStaff
                           ? "staff-bubble is-staff"
                           : "staff-bubble is-customer"
                       }
                     >
-                      <div>{msg.content || msg.message}</div>
+                      <div>{msg.content}</div>
                       <div className="staff-bubble-time">
-                        {msg.time
-                          ? new Date(msg.time).toLocaleTimeString("vi-VN", {
+                        {msg.senderName ? `${msg.senderName} · ` : ""}
+                        {time
+                          ? new Date(time).toLocaleTimeString("vi-VN", {
                               hour: "2-digit",
                               minute: "2-digit",
                             })
@@ -133,6 +142,7 @@ const CustomerChatManagementPage = () => {
                   type="text"
                   placeholder="Nhập tin nhắn..."
                   value={input}
+                  disabled={sending}
                   onChange={(e) => setInput(e.target.value)}
                   onKeyDown={(e) => e.key === "Enter" && sendMessage()}
                 />
@@ -140,6 +150,7 @@ const CustomerChatManagementPage = () => {
                   type="button"
                   className="staff-btn staff-btn-primary"
                   onClick={sendMessage}
+                  disabled={sending}
                 >
                   Gửi
                 </button>

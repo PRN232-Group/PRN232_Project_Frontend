@@ -1,0 +1,21 @@
+@startuml fig8_quote
+!theme plain
+skinparam shadowing false
+skinparam backgroundColor white
+skinparam ActivityBackgroundColor #F5F8FC
+skinparam ActivityBorderColor #1F4E79
+
+|Customer|
+start
+:POST /api/quotation-requests\n(title + products);
+:View /my-quotations;
+
+|Sales|
+:GET quotation-requests;
+:PUT .../reply;
+:POST /api/quotations\n(link request, amount, items);
+
+|Customer / Sales|
+:Update quotation\nApproved / Rejected;
+stop
+@enduml

@@ -1,0 +1,37 @@
+@startuml fig7_arch
+!theme plain
+skinparam shadowing false
+skinparam backgroundColor white
+skinparam packageStyle rectangle
+skinparam componentStyle rectangle
+
+package "Frontend (React + Vite)" {
+  [pages / DashboardShell] as Pages
+  [application/services] as AppSvc
+  [apiClient (Axios)] as Http
+  [domain helpers] as Domain
+}
+
+package "Backend solution" {
+  [Api.WebApi\nControllers, JWT, Swagger] as WebApi
+  [Api.Services\nBusiness + Audit interceptor] as Services
+  [Api.Application\nInterfaces + DTOs] as Application
+  [Api.Infrastructure\nUnitOfWork / Repository] as Infra
+  [Api.Entity\nDbContext + Models] as Entity
+}
+
+database "SQL Server" as DB
+cloud "SMTP" as SMTP
+
+Pages --> AppSvc
+AppSvc --> Domain
+AppSvc --> Http
+Http --> WebApi : REST + Bearer JWT
+WebApi --> Services
+Services --> Application
+Services --> Infra
+Infra --> Entity
+Entity --> DB
+Services --> SMTP
+
+@enduml

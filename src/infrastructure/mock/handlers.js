@@ -302,24 +302,6 @@ export async function handleMockRequest(config) {
       items,
     };
     db.orders.unshift(order);
-    db.productionOrders.push({
-      id: 1000 + order.id,
-      orderId: order.id,
-      customerName: order.customerName,
-      address: order.address,
-      shippingAddress: order.shippingAddress,
-      status: "Queued",
-      progressStatus: "PENDING",
-      progressPercent: 0,
-      deadline: new Date(Date.now() + 14 * 86400000).toISOString().slice(0, 10),
-      createdAt: order.createdAt,
-      items: items.map((it) => ({
-        productId: it.productId,
-        productName: it.productName,
-        quantity: it.quantity,
-        price: it.price,
-      })),
-    });
     db.cart = [];
     return ok(order, 201);
   }
@@ -534,7 +516,28 @@ export async function handleMockRequest(config) {
 
   // ----- Contents / Blog -----
   if (method === "get" && urlPath === "/api/contents") return ok([...db.contents]);
-  if (method === "get" && urlPath === "/api/Blog") return ok([...db.contents]);
+  if (method === "get" && urlPath === "/api/Blog") {
+    return ok(
+      db.contents.filter(
+        (c) =>
+          (c.type || "Blog") === "Blog" && c.isPublished !== false
+      )
+    );
+  }
+  {
+    const m = match(method, urlPath, {
+      method: "get",
+      re: /^\/api\/contents\/by-slug\/(.+)$/,
+    });
+    if (m) {
+      const slug = decodeURIComponent(m[0]);
+      const item = db.contents.find(
+        (c) => c.slug === slug && c.isPublished !== false
+      );
+      if (!item) notFound();
+      return ok(item);
+    }
+  }
   if (method === "post" && urlPath === "/api/contents") {
     const item = {
       id: db.nextIds.content++,
@@ -569,10 +572,33 @@ export async function handleMockRequest(config) {
   }
 
   if (method === "get" && urlPath === "/api/systemlogs") {
-    return ok([...db.systemLogs]);
+    const page = Number(config.params?.page) || 1;
+    const pageSize = Math.min(Number(config.params?.pageSize) || 20, 50);
+    let rows = [...db.systemLogs];
+    const actionQ = (config.params?.action || "").toString().trim();
+    const entityQ = (config.params?.entity || "").toString().trim();
+    if (actionQ) {
+      rows = rows.filter((x) =>
+        (x.action || "").toLowerCase().includes(actionQ.toLowerCase())
+      );
+    }
+    if (entityQ) {
+      rows = rows.filter((x) =>
+        (x.entity || "").toLowerCase().includes(entityQ.toLowerCase())
+      );
+    }
+    rows.sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt)));
+    const total = rows.length;
+    const start = (page - 1) * pageSize;
+    return ok({
+      items: rows.slice(start, start + pageSize),
+      total,
+      page,
+      pageSize,
+    });
   }
 
-  // ----- Chat -----
+  // ----- Chat (DTO khớp BE: ChatMessageDto / ChatCustomerDto) -----
   if (method === "get" && urlPath === "/api/chat/messages") {
     return ok(db.chatMessages[12] || []);
   }
@@ -587,18 +613,26 @@ export async function handleMockRequest(config) {
     if (m) return ok(db.chatMessages[m[0]] || []);
   }
   if (method === "post" && urlPath === "/api/chat/send") {
-    const customerId = body.customerId || 12;
+    const customerId = Number(body.customerId) || 12;
     const list =
       db.chatMessages[customerId] || (db.chatMessages[customerId] = []);
+    const isFromCustomer = body.customerId == null;
     const item = {
       id: db.nextIds.chat++,
+      senderId: isFromCustomer ? customerId : 2,
+      senderName: isFromCustomer ? "Khách" : "Sales",
       customerId,
-      senderRole: body.senderRole || "Customer",
       content: body.content,
-      createdAt: new Date().toISOString(),
+      sentAt: new Date().toISOString(),
+      isFromCustomer,
     };
     list.push(item);
-    return ok(item, 201);
+    const cust = db.chatCustomers.find((c) => c.customerId === customerId);
+    if (cust) {
+      cust.lastMessage = body.content;
+      cust.lastMessageAt = item.sentAt;
+    }
+    return ok(item);
   }
 
   // ----- Quotations / Design -----
@@ -866,6 +900,27 @@ export async function handleMockRequest(config) {
   if (method === "get" && urlPath === "/api/design-requests") {
     return ok([...db.designRequests]);
   }
+  if (method === "get" && urlPath === "/api/design-requests/mine") {
+    return ok(db.designRequests.filter((r) => Number(r.customerId) === 12));
+  }
+  if (method === "post" && urlPath === "/api/design-requests") {
+    const item = {
+      id: Math.max(0, ...db.designRequests.map((r) => r.id)) + 1,
+      customerId: 12,
+      customerName: "Nguyễn Văn An",
+      title: body.title,
+      style: body.style || null,
+      interiorDesignId: body.interiorDesignId || null,
+      relatedProductIds: body.relatedProductIds || [],
+      budget: body.budget ?? null,
+      notes: body.notes || null,
+      status: "New",
+      attachments: body.attachments || [],
+      createdAt: new Date().toISOString(),
+    };
+    db.designRequests.unshift(item);
+    return ok(item, 201);
+  }
   {
     const m = match(method, urlPath, {
       method: "get",
@@ -885,7 +940,17 @@ export async function handleMockRequest(config) {
     if (m) {
       const i = db.designRequests.findIndex((x) => String(x.id) === m[0]);
       if (i < 0) notFound();
-      db.designRequests[i] = { ...db.designRequests[i], ...body };
+      const current = db.designRequests[i];
+      const nextMap = {
+        New: "InReview",
+        InReview: "Quoted",
+        Quoted: "Done",
+      };
+      const expected = nextMap[current.status];
+      if (!expected || expected !== body.status) {
+        fail(400, `Chỉ được chuyển sang '${expected}'`);
+      }
+      db.designRequests[i] = { ...current, status: expected };
       return ok(db.designRequests[i]);
     }
   }
@@ -936,100 +1001,6 @@ export async function handleMockRequest(config) {
     }
   }
 
-  // ----- Production / Delivery -----
-  if (method === "get" && urlPath === "/api/production/dashboard") {
-    return ok({
-      totalOrders: db.productionOrders.length,
-      pending: db.productionOrders.filter((o) => o.status === "Queued").length,
-      preparing: db.productionOrders.filter((o) => o.status === "InProgress")
-        .length,
-      shipping: db.deliveries.filter(
-        (d) => (d.status || d.deliveryStatus) === "OutForDelivery"
-      ).length,
-      delivered:
-        db.productionOrders.filter((o) => o.status === "Done").length ||
-        db.deliveries.filter(
-          (d) => (d.status || d.deliveryStatus) === "Delivered"
-        ).length,
-    });
-  }
-  if (method === "get" && urlPath === "/api/production/orders") {
-    return ok([...db.productionOrders]);
-  }
-  {
-    const m = match(method, urlPath, {
-      method: "get",
-      re: /^\/api\/production\/orders\/(\d+)$/,
-    });
-    if (m) {
-      const o = db.productionOrders.find((x) => String(x.id) === m[0]);
-      if (!o) notFound();
-      return ok(o);
-    }
-  }
-  {
-    const m = match(method, urlPath, {
-      method: "put",
-      re: /^\/api\/production\/orders\/(\d+)\/status$/,
-    });
-    if (m) {
-      const i = db.productionOrders.findIndex((x) => String(x.id) === m[0]);
-      if (i < 0) notFound();
-      db.productionOrders[i].status = body.status;
-      return ok(db.productionOrders[i]);
-    }
-  }
-  if (method === "get" && urlPath === "/api/production/progress") {
-    const STATUS_MAP = {
-      Queued: "PENDING",
-      InProgress: "PREPARING",
-      Done: "DELIVERED",
-    };
-    return ok(
-      db.productionOrders.map((o) => ({
-        id: o.orderId || o.id,
-        orderId: o.orderId,
-        customerName: o.customerName,
-        status: o.progressStatus || STATUS_MAP[o.status] || "PENDING",
-        progressPercent: o.progressPercent,
-      }))
-    );
-  }
-
-  if (method === "get" && urlPath === "/api/delivery/orders") {
-    return ok(
-      db.deliveries.map((d) => ({
-        ...d,
-        id: d.orderId,
-        status: d.status || d.deliveryStatus,
-      }))
-    );
-  }
-  {
-    const m = match(method, urlPath, {
-      method: "put",
-      re: /^\/api\/delivery\/orders\/(\d+)$/,
-    });
-    if (m) {
-      const i = db.deliveries.findIndex(
-        (x) => String(x.orderId) === m[0] || String(x.id) === m[0]
-      );
-      if (i < 0) notFound();
-      const nextStatus = body.status || body.deliveryStatus;
-      db.deliveries[i] = {
-        ...db.deliveries[i],
-        ...body,
-        status: nextStatus,
-        deliveryStatus: nextStatus,
-      };
-      return ok({
-        ...db.deliveries[i],
-        id: db.deliveries[i].orderId,
-        status: nextStatus,
-      });
-    }
-  }
-
   // ----- Analytics -----
   if (method === "get" && urlPath === "/api/analytics/dashboard") {
     const soldMap = {};
@@ -1050,12 +1021,23 @@ export async function handleMockRequest(config) {
     });
     const best = Object.values(soldMap).sort((a, b) => b.sold - a.sold)[0];
     return ok({
-      totalRevenue: db.orders.reduce((s, o) => s + (o.totalPrice || 0), 0),
-      totalOrders: db.orders.length,
+      totalRevenue: db.orders
+        .filter((o) => o.status !== "Cancelled")
+        .reduce((s, o) => s + (o.totalPrice || 0), 0),
+      totalOrders: db.orders.filter((o) => o.status !== "Cancelled").length,
       totalProducts: db.products.length,
       totalCustomers: db.users.filter((u) => u.role === "Customer").length,
       totalUsers: db.users.length,
-      bestSellingProduct: best?.name || db.products[0]?.name || "",
+      bestSellingProduct: best
+        ? {
+            id: best.productId,
+            productId: best.productId,
+            name: best.name,
+            sold: best.sold,
+            soldQuantity: best.sold,
+            revenue: best.revenue,
+          }
+        : null,
     });
   }
   if (method === "get" && urlPath === "/api/analytics/best-selling-products") {
@@ -1081,17 +1063,7 @@ export async function handleMockRequest(config) {
     const rows = Object.values(soldMap).sort(
       (a, b) => b.soldQuantity - a.soldQuantity
     );
-    if (rows.length) return ok(rows);
-    return ok(
-      db.products.slice(0, 3).map((p, i) => ({
-        id: p.id,
-        productId: p.id,
-        name: p.name,
-        sold: 10 - i,
-        soldQuantity: 10 - i,
-        revenue: p.price * (10 - i),
-      }))
-    );
+    return ok(rows);
   }
   if (method === "get" && urlPath === "/api/revenue/report") {
     return ok(

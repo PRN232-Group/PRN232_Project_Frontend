@@ -12,6 +12,7 @@ const WORKSPACE = {
       { label: "Giỏ hàng", href: "/cart" },
       { label: "Đơn hàng của tôi", href: "/orders" },
       { label: "Báo giá của tôi", href: "/my-quotations" },
+      { label: "Yêu cầu thiết kế", href: "/my-design-requests" },
       { label: "Hỗ trợ / Tin nhắn", href: "/chat" },
     ],
   },

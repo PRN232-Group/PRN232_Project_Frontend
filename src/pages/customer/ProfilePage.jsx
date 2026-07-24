@@ -43,8 +43,8 @@ const ProfilePage = () => {
       setForm({
         fullName: sessionUser?.name || "",
         email: sessionUser?.email || "",
-        phone: sessionUser?.phone || "0901234567",
-        address: "12 Nguyễn Huệ, Q1, HCM",
+        phone: sessionUser?.phone || "",
+        address: "",
       });
       setPreview("");
     } finally {

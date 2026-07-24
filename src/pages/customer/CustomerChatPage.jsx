@@ -1,21 +1,35 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useContext, useEffect, useRef, useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import "../../styles/customer/customerChatPage.css";
 import { chatService } from "../../application/services";
+import { notifyError } from "../../application/services/notify";
+import UserContext from "../../contexts/UserContext";
 
-const isMine = (msg) => {
-  const s = (msg.sender || msg.senderRole || "").toString().toLowerCase();
-  return s === "customer" || s === "user" || s === "me";
+const WELCOME = {
+  id: "welcome",
+  content:
+    "Xin chào! Interior Studio có thể tư vấn sản phẩm, báo giá hoặc thiết kế giúp bạn.",
+  sentAt: new Date().toISOString(),
+  isFromCustomer: false,
+  senderName: "Interior Studio",
 };
 
 const CustomerChatPage = () => {
+  const { user } = useContext(UserContext);
+  const navigate = useNavigate();
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(true);
+  const [sending, setSending] = useState(false);
   const chatEndRef = useRef(null);
 
   useEffect(() => {
+    if (!user) {
+      navigate("/login", { replace: true, state: { from: "/chat" } });
+      return;
+    }
     fetchMessages();
-  }, []);
+  }, [user, navigate]);
 
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -26,29 +40,10 @@ const CustomerChatPage = () => {
       setLoading(true);
       const res = await chatService.getMessages();
       const list = res.data || [];
-      setMessages(
-        list.length
-          ? list
-          : [
-              {
-                id: 1,
-                senderRole: "Sales",
-                content:
-                  "Xin chào! Interior Studio có thể tư vấn sản phẩm, báo giá hoặc thiết kế giúp bạn.",
-                createdAt: new Date().toISOString(),
-              },
-            ]
-      );
+      setMessages(list.length ? list : [WELCOME]);
     } catch {
-      setMessages([
-        {
-          id: 1,
-          senderRole: "Sales",
-          content:
-            "Xin chào! Interior Studio có thể tư vấn sản phẩm, báo giá hoặc thiết kế giúp bạn.",
-          createdAt: new Date().toISOString(),
-        },
-      ]);
+      notifyError("Không tải được hội thoại");
+      setMessages([WELCOME]);
     } finally {
       setLoading(false);
     }
@@ -56,36 +51,27 @@ const CustomerChatPage = () => {
 
   const sendMessage = async () => {
     const text = input.trim();
-    if (!text) return;
+    if (!text || sending) return;
 
-    const optimistic = {
-      id: Date.now(),
-      senderRole: "Customer",
-      content: text,
-      createdAt: new Date().toISOString(),
-    };
-    setMessages((prev) => [...prev, optimistic]);
+    setSending(true);
     setInput("");
-
     try {
-      await chatService.send({ content: text, senderRole: "Customer" });
-      // mock auto-reply feel
-      setTimeout(() => {
-        setMessages((prev) => [
-          ...prev,
-          {
-            id: Date.now() + 1,
-            senderRole: "Sales",
-            content:
-              "Cảm ơn bạn! Nhân viên kinh doanh sẽ phản hồi sớm. Bạn cũng có thể xem Sản phẩm hoặc yêu cầu thiết kế 3D.",
-            createdAt: new Date().toISOString(),
-          },
-        ]);
-      }, 600);
+      const res = await chatService.send({ content: text });
+      const saved = res.data;
+      setMessages((prev) => {
+        const withoutWelcome = prev.filter((m) => m.id !== "welcome");
+        return [...withoutWelcome, saved];
+      });
     } catch (err) {
       console.error(err);
+      notifyError(err.response?.data?.message || "Gửi tin nhắn thất bại");
+      setInput(text);
+    } finally {
+      setSending(false);
     }
   };
+
+  if (!user) return null;
 
   return (
     <div className="chat-page">
@@ -100,26 +86,33 @@ const CustomerChatPage = () => {
         {loading && <p>Đang tải hội thoại...</p>}
 
         {!loading &&
-          messages.map((msg) => (
-            <div
-              key={msg.id}
-              className={`chat-message ${isMine(msg) ? "right" : "left"}`}
-            >
-              <div className="bubble">
-                {!isMine(msg) && (
-                  <div className="bubble-role">Tư vấn Interior Studio</div>
-                )}
-                <p>{msg.content}</p>
-                <span className="time">
-                  {new Date(msg.createdAt).toLocaleTimeString("vi-VN", {
-                    hour: "2-digit",
-                    minute: "2-digit",
-                  })}
-                </span>
+          messages.map((msg) => {
+            const mine = !!msg.isFromCustomer;
+            const time = msg.sentAt || msg.createdAt;
+            return (
+              <div
+                key={msg.id}
+                className={`chat-message ${mine ? "right" : "left"}`}
+              >
+                <div className="bubble">
+                  {!mine && (
+                    <div className="bubble-role">
+                      {msg.senderName || "Tư vấn Interior Studio"}
+                    </div>
+                  )}
+                  <p>{msg.content}</p>
+                  <span className="time">
+                    {time
+                      ? new Date(time).toLocaleTimeString("vi-VN", {
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })
+                      : ""}
+                  </span>
+                </div>
               </div>
-            </div>
-          ))}
-
+            );
+          })}
         <div ref={chatEndRef} />
       </div>
 
@@ -128,19 +121,18 @@ const CustomerChatPage = () => {
           type="text"
           placeholder="Nhập tin nhắn..."
           value={input}
+          disabled={sending}
           onChange={(e) => setInput(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.nativeEvent.isComposing) return;
-            if (e.key === "Enter" && !e.shiftKey) {
-              e.preventDefault();
-              sendMessage();
-            }
-          }}
+          onKeyDown={(e) => e.key === "Enter" && sendMessage()}
         />
-        <button type="button" onClick={sendMessage}>
+        <button type="button" onClick={sendMessage} disabled={sending}>
           Gửi
         </button>
       </div>
+      <p className="chat-hint">
+        Xem thêm <Link to="/products">Sản phẩm</Link> ·{" "}
+        <Link to="/my-design-requests">Yêu cầu thiết kế</Link>
+      </p>
     </div>
   );
 };

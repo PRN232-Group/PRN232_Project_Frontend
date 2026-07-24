@@ -1,0 +1,36 @@
+@startuml fig2_usecase
+!theme plain
+skinparam shadowing false
+skinparam backgroundColor white
+skinparam actorStyle awesome
+left to right direction
+
+
+actor Guest
+actor Customer
+actor Sales
+actor Manager
+actor Admin
+
+rectangle "Interior Studio" {
+  usecase "Browse products / design / blog" as UC_Browse
+  usecase "Register / Login / Reset password" as UC_Auth
+  usecase "Cart, checkout, track orders" as UC_Buy
+  usecase "Chat, quotation, design request" as UC_Consult
+  usecase "Update order / quote / design request" as UC_Sales
+  usecase "Manage catalog, prices, concepts, analytics" as UC_Mgr
+  usecase "Manage users, page ACL, CMS, system logs" as UC_Admin
+}
+
+Guest --> UC_Browse
+Guest --> UC_Auth
+Customer --> UC_Browse
+Customer --> UC_Auth
+Customer --> UC_Buy
+Customer --> UC_Consult
+Sales --> UC_Sales
+Sales --> UC_Consult
+Manager --> UC_Mgr
+Admin --> UC_Admin
+
+@enduml

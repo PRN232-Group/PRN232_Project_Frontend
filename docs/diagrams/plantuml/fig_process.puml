@@ -1,0 +1,19 @@
+@startuml fig_process
+!theme plain
+skinparam shadowing false
+skinparam backgroundColor white
+skinparam ActivityBackgroundColor #F5F8FC
+skinparam ActivityBorderColor #1F4E79
+
+start
+:Requirement\n(API contract / TEAM_API_SPEC);
+:Design\n(DB + UI routes);
+:Implement\n(BE services + FE pages);
+:Unit test + smoke UI;
+:Demo / fix;
+if (More changes?) then (yes)
+  -> Requirement;
+else (no)
+  stop
+endif
+@enduml

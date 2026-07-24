@@ -47,7 +47,7 @@ const UserManagementPage = () => {
     try {
       setLoading(true);
       const res = await userService.getAll();
-      setUsers((res.data || []).filter((u) => u.role !== "Production"));
+      setUsers(res.data || []);
     } catch (err) {
       console.error(err);
       notifyError("Không tải được người dùng");

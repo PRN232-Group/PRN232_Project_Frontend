@@ -1,0 +1,19 @@
+@startuml fig6_designreq
+!theme plain
+skinparam shadowing false
+skinparam backgroundColor white
+skinparam StateBackgroundColor #F5F8FC
+skinparam StateBorderColor #1F4E79
+
+[*] --> New : Customer creates request
+
+New --> InReview : Sales (+1 step)
+InReview --> Quoted : Sales (+1 step)
+Quoted --> Done : Sales (+1 step)
+Done --> [*]
+
+note right of New
+  Exactly one step at a time.
+  Skipping (New to Done) is rejected.
+end note
+@enduml

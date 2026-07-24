@@ -1,0 +1,26 @@
+@startuml fig5_order
+!theme plain
+skinparam shadowing false
+skinparam backgroundColor white
+skinparam StateBackgroundColor #F5F8FC
+skinparam StateBorderColor #1F4E79
+
+[*] --> Pending : checkout creates order
+
+Pending --> Processing : Sales/Admin
+Processing --> Shipping : Sales/Admin
+Shipping --> Completed : Sales/Admin
+
+Pending --> Cancelled : before terminal
+Processing --> Cancelled
+Shipping --> Cancelled
+
+Completed --> [*]
+Cancelled --> [*]
+
+note right of Pending
+  Forward-only on happy path.
+  Illegal jump (e.g. Pending to Shipping)
+  is rejected.
+end note
+@enduml
